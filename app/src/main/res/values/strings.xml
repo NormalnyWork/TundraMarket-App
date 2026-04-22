@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Тундра-Маркет</string>
+
+    <string name="common_cd_back_action">Назад</string>
 </resources>
