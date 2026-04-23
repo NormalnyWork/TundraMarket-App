@@ -46,4 +46,6 @@ dependencies {
     implementation(libs.bundles.koin)
     // Navigation
     implementation(libs.bundles.decompose)
+    // Paging
+    implementation(libs.bundles.paging)
 }
