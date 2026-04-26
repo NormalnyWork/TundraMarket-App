@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -50,4 +51,7 @@ dependencies {
     implementation(libs.bundles.paging)
     // Ktor
     implementation(libs.bundles.ktor)
+    // Room
+    implementation(libs.bundles.room)
+    ksp(libs.room.compiler)
 }
