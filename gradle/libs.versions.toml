@@ -1,24 +1,19 @@
 [versions]
 agp = "9.1.1"
-android-compileSdk = "37"
-android-minSdk = "24"
-android-targetSdk = "37"
 
 kotlin = "2.3.20"
 composeBom = "2026.04.01"
 
 androidx-activity = "1.13.0"
-androidx-core = "1.18.0"
 
 koin = "4.2.1"
 decompose = "3.5.0"
 essenty = "2.5.0"
-ktor = "3.4.2"
+ktor = "3.4.3"
 paging = "3.4.2"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
-androidx-core = { module = "androidx.core:core", version.ref="androidx-core" }
 
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 compose-ui = { group = "androidx.compose.ui", name = "ui" }
@@ -37,16 +32,18 @@ essenty-stateKeeper = { module = "com.arkivanov.essenty:state-keeper", version.r
 essenty-backHandler = { group = "com.arkivanov.essenty", name = "back-handler", version.ref = "essenty" }
 
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
-ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
-ktor-client-resources = { module = "io.ktor:ktor-client-resources", version.ref = "ktor" }
-ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
+ktor-resources = { module = "io.ktor:ktor-client-resources", version.ref = "ktor" }
+ktor-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-protobuf = { module = "io.ktor:ktor-serialization-kotlinx-protobuf", version.ref = "ktor" }
+ktor-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 
 paging-common = { module = "androidx.paging:paging-common", version.ref = "paging" }
 paging-compose = { module = "androidx.paging:paging-compose", version.ref = "paging" }
 
 [bundles]
 decompose = ["decompose", "decompose-extensions", "essenty-lifecycle", "essenty-backHandler", "essenty-instanceKeeper", "essenty-stateKeeper"]
-ktor = ["ktor-client-core", "ktor-client-logging", "ktor-client-okhttp", "ktor-client-resources"]
+ktor = ["ktor-client-core", "ktor-logging", "ktor-okhttp", "ktor-resources", "ktor-negotiation", "ktor-protobuf"]
 koin = ["koin", "koin-android"]
 compose = ["compose-ui", "compose-material3", "compose-ui-tooling-preview"]
 paging = ["paging-common", "paging-compose"]

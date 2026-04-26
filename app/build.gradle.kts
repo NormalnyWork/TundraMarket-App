@@ -48,4 +48,6 @@ dependencies {
     implementation(libs.bundles.decompose)
     // Paging
     implementation(libs.bundles.paging)
+    // Ktor
+    implementation(libs.bundles.ktor)
 }

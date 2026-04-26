@@ -9,4 +9,5 @@ data class Order(
     val comment: String,
     val status: OrderStatus,
     val statusHistory: List<OrderStatusHistory>,
+    val networkStatus: OrderNetworkStatus? = null,
 )
