@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
 }
 
@@ -48,6 +49,7 @@ dependencies {
     implementation(libs.bundles.koin)
     // Navigation
     implementation(libs.bundles.decompose)
+    implementation(libs.kotlinx.serialization)
     // Paging
     implementation(libs.bundles.paging)
     // Ktor

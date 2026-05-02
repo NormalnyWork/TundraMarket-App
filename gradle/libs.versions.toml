@@ -4,8 +4,8 @@ agp = "9.1.1"
 kotlin = "2.3.21"
 ksp = "2.3.7"
 composeBom = "2026.04.01"
-
 androidx-activity = "1.13.0"
+kotlinxSerialization = "1.11.0"
 
 koin = "4.2.1"
 decompose = "3.5.0"
@@ -50,6 +50,7 @@ room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 
 datastore = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
+kotlinx-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinxSerialization" }
 
 [bundles]
 decompose = ["decompose", "decompose-extensions", "essenty-lifecycle", "essenty-backHandler", "essenty-instanceKeeper", "essenty-stateKeeper"]
@@ -62,4 +63,5 @@ room = ["room-runtime", "room-ktx"]
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

@@ -43,7 +43,7 @@ Which means, nomad's role in the app must be fully offline-first (letting do eve
 - Keep changes scoped to the user request; do not refactor unrelated areas.
 - Match existing Kotlin and Gradle style in the touched files.
 - Prefer small, targeted changes over broad rewrites.
-- When modifying dependencies or build logic, update the relevant Kotlin DSL files instead of adding parallel config. Also, ask user for permission to make these modifications.
+- When modifying dependencies or build logic, update the relevant Kotlin DSL files instead of adding parallel config. Also, ask user for permission to make these modifications (via polls).
 - Do not remove or overwrite user changes you did not make.
 - Use consistent code style. Two generated files should not be different in code style (line break after annotation, trailing comma, etc.)
 
@@ -56,3 +56,4 @@ Which means, nomad's role in the app must be fully offline-first (letting do eve
 ## Notes for agents
 
 - Follow repository-local instructions over generic defaults when they conflict.
+- If during the work you find something that would be good to have in this file - suggest to add it, but don't do it yourself
