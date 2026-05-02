@@ -44,6 +44,7 @@ dependencies {
     implementation(libs.bundles.compose)
     debugImplementation(libs.compose.ui.tooling)
     // DI
+    implementation(platform(libs.koin.bom))
     implementation(libs.bundles.koin)
     // Navigation
     implementation(libs.bundles.decompose)
@@ -54,4 +55,6 @@ dependencies {
     // Room
     implementation(libs.bundles.room)
     ksp(libs.room.compiler)
+    // DataStore
+    implementation(libs.datastore)
 }

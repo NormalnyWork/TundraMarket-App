@@ -25,7 +25,8 @@ data class OrderResponse(
 
 @Serializable
 data class CreateOrderRequest(
-    @ProtoNumber(2) val tradingStationId: Int,
+    @ProtoNumber(1) val nomadId: Int? = null,
+    @ProtoNumber(2) val tradingStationId: Int? = null,
     @ProtoNumber(3) val location: ProtoLocation,
     @ProtoNumber(4) val cart: List<ProtoProductCount>,
     @ProtoNumber(5) val comment: String,
@@ -38,7 +39,7 @@ data class CreateOrderResponse(
 
 @Serializable
 data class CheckOrderStatusRequest(
-    @ProtoNumber(2) val lastUpdated: Long,
+    @ProtoNumber(1) val lastUpdated: Long,
 )
 
 @Serializable
@@ -49,9 +50,9 @@ data class CheckOrderStatusResponse(
 
 @Serializable
 data class ChangeOrderStatusRequest(
-    @ProtoNumber(2) val orderId: Int,
-    @ProtoNumber(3) val newStatus: ProtoOrderStatus,
-    @ProtoNumber(4) val comment: String? = null,
+    @ProtoNumber(1) val orderId: Int,
+    @ProtoNumber(2) val newStatus: ProtoOrderStatus,
+    @ProtoNumber(3) val comment: String? = null,
 )
 
 @Serializable
@@ -68,14 +69,14 @@ enum class ProtoOrderCategory {
 
 @Serializable
 data class OrderListRequest(
-    @ProtoNumber(2) val anchor: Int? = null,
-    @ProtoNumber(3) val pageSize: Int,
-    @ProtoNumber(4) val orderCategory: ProtoOrderCategory,
+    @ProtoNumber(1) val anchor: Int? = null,
+    @ProtoNumber(2) val pageSize: Int,
+    @ProtoNumber(3) val orderCategory: ProtoOrderCategory,
 )
 
 @Serializable
 data class OrderUpdatesRequest(
-    @ProtoNumber(2) val lastUpdated: Long,
+    @ProtoNumber(1) val lastUpdated: Long,
 )
 
 @Serializable
