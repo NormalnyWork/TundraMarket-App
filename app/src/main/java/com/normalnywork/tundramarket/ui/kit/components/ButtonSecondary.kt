@@ -24,13 +24,14 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewWrapper
 import androidx.compose.ui.unit.dp
 import com.normalnywork.tundramarket.ui.kit.icons.TMIcons
 import com.normalnywork.tundramarket.ui.kit.icons.UserLocation
 import com.normalnywork.tundramarket.ui.kit.style.LocalTMColors
 import com.normalnywork.tundramarket.ui.kit.style.LocalTMTypography
+import com.normalnywork.tundramarket.ui.kit.style.TMPreviewWrapperProvider
 import com.normalnywork.tundramarket.ui.kit.style.TMShapes
-import com.normalnywork.tundramarket.ui.kit.style.TundraMarketTheme
 
 @Composable
 fun TMButtonSecondary(
@@ -124,37 +125,34 @@ data class TMButtonSecondaryColors(
     }
 }
 
+@PreviewWrapper(TMPreviewWrapperProvider::class)
 @Preview
 @Composable
 private fun PreviewDefault() {
-    TundraMarketTheme {
-        TMButtonSecondary(
-            text = "Default",
-            onClick = {},
-        )
-    }
+    TMButtonSecondary(
+        text = "Default",
+        onClick = {},
+    )
 }
 
+@PreviewWrapper(TMPreviewWrapperProvider::class)
 @Preview
 @Composable
 private fun PreviewIcon() {
-    TundraMarketTheme {
-        TMButtonSecondary(
-            text = "Icon",
-            icon = TMIcons.UserLocation,
-            onClick = {},
-        )
-    }
+    TMButtonSecondary(
+        text = "Icon",
+        icon = TMIcons.UserLocation,
+        onClick = {},
+    )
 }
 
+@PreviewWrapper(TMPreviewWrapperProvider::class)
 @Preview
 @Composable
 private fun PreviewDisabled() {
-    TundraMarketTheme {
-        TMButtonSecondary(
-            text = "Icon",
-            onClick = {},
-            enabled = false,
-        )
-    }
+    TMButtonSecondary(
+        text = "Icon",
+        onClick = {},
+        enabled = false,
+    )
 }

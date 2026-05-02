@@ -13,9 +13,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewWrapper
 import androidx.compose.ui.unit.dp
+import com.normalnywork.tundramarket.ui.kit.icons.TMIcons
+import com.normalnywork.tundramarket.ui.kit.icons.Waiting
 import com.normalnywork.tundramarket.ui.kit.style.LocalTMColors
 import com.normalnywork.tundramarket.ui.kit.style.LocalTMTypography
+import com.normalnywork.tundramarket.ui.kit.style.TMPreviewWrapperProvider
 import com.normalnywork.tundramarket.ui.kit.style.TMShapes
 
 @Composable
@@ -59,4 +64,15 @@ fun InfoCard(
             )
         }
     }
+}
+
+@PreviewWrapper(TMPreviewWrapperProvider::class)
+@Preview
+@Composable
+private fun Preview() {
+    InfoCard(
+        title = "Title",
+        body = "Body",
+        icon = TMIcons.Waiting,
+    )
 }

@@ -20,6 +20,7 @@ import androidx.compose.foundation.text.input.KeyboardActionHandler
 import androidx.compose.foundation.text.input.OutputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,10 +33,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewWrapper
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.normalnywork.tundramarket.ui.kit.icons.TMIcons
+import com.normalnywork.tundramarket.ui.kit.icons.Waiting
 import com.normalnywork.tundramarket.ui.kit.style.LocalTMColors
 import com.normalnywork.tundramarket.ui.kit.style.LocalTMTypography
+import com.normalnywork.tundramarket.ui.kit.style.TMPreviewWrapperProvider
 import com.normalnywork.tundramarket.ui.kit.style.TMShapes
 
 @Composable
@@ -193,4 +199,16 @@ data class TMTextFieldColors(
                 textColor = LocalTMColors.current.textPrimary,
             )
     }
+}
+
+@PreviewWrapper(TMPreviewWrapperProvider::class)
+@Preview
+@Composable
+private fun Preview() {
+    TMTextField(
+        state = rememberTextFieldState(),
+        label = "Label",
+        icon = TMIcons.Waiting,
+        placeholder = "Placeholder",
+    )
 }

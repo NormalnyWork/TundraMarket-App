@@ -21,12 +21,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewWrapper
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.normalnywork.tundramarket.ui.kit.style.LocalTMColors
 import com.normalnywork.tundramarket.ui.kit.style.LocalTMTypography
+import com.normalnywork.tundramarket.ui.kit.style.TMPreviewWrapperProvider
 import com.normalnywork.tundramarket.ui.kit.style.TMShapes
-import com.normalnywork.tundramarket.ui.kit.style.TundraMarketTheme
 
 @Composable
 private fun StageBar(
@@ -156,13 +157,12 @@ data class StageIndicatorShape(
     }
 }
 
+@PreviewWrapper(TMPreviewWrapperProvider::class)
 @Preview
 @Composable
 private fun Preview() {
-    TundraMarketTheme {
-        StageBar(
-            range = 1..4,
-            current = 2,
-        )
-    }
+    StageBar(
+        range = 1..4,
+        current = 2,
+    )
 }

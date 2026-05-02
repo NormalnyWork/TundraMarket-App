@@ -37,13 +37,14 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewWrapper
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.normalnywork.tundramarket.ui.kit.icons.ArrowForward
 import com.normalnywork.tundramarket.ui.kit.icons.TMIcons
 import com.normalnywork.tundramarket.ui.kit.style.LocalTMColors
 import com.normalnywork.tundramarket.ui.kit.style.LocalTMTypography
-import com.normalnywork.tundramarket.ui.kit.style.TundraMarketTheme
+import com.normalnywork.tundramarket.ui.kit.style.TMPreviewWrapperProvider
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -230,13 +231,12 @@ data class TMButtonSliderColors(
     }
 }
 
+@PreviewWrapper(TMPreviewWrapperProvider::class)
 @Preview
 @Composable
 private fun PreviewDefault() {
-    TundraMarketTheme {
-        TMButtonSlider(
-            text = "Slide",
-            onClick = {},
-        )
-    }
+    TMButtonSlider(
+        text = "Slide",
+        onClick = {},
+    )
 }
