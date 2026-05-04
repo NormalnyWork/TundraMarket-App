@@ -2,4 +2,11 @@
     <string name="app_name">Тундра-Маркет</string>
 
     <string name="common_cd_back_action">Назад</string>
+    
+    <string name="auth_role_app_desc">Система доставки товаров при помощи БПЛА</string>
+    <string name="auth_role_subtitle">Выберите свою роль:</string>
+    <string name="auth_role_nomad">Кочевник</string>
+    <string name="auth_role_nomad_desc">Я делаю заказы</string>
+    <string name="auth_role_trading_station">Фактория</string>
+    <string name="auth_role_trading_station_desc">Я обрабатываю заказы</string>
 </resources>

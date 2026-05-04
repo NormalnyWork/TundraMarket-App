@@ -15,7 +15,7 @@ import com.arkivanov.decompose.extensions.compose.stack.animation.fade
 import com.arkivanov.decompose.extensions.compose.stack.animation.predictiveback.predictiveBackAnimation
 import com.arkivanov.decompose.extensions.compose.stack.animation.stackAnimation
 import com.normalnywork.tundramarket.ui.screens.auth.AuthUserInfoComponent
-import com.normalnywork.tundramarket.ui.screens.auth.RoleSelectionComponent
+import com.normalnywork.tundramarket.ui.screens.auth.RoleSelectionContent
 
 @OptIn(ExperimentalDecomposeApi::class)
 @Composable
@@ -35,24 +35,6 @@ fun AuthFlowContent(
         when (val instance = child.instance) {
             is AuthFlowComponent.Child.RoleSelection -> RoleSelectionContent(instance.component)
             is AuthFlowComponent.Child.UserInfo -> AuthUserInfoContent(instance.component)
-        }
-    }
-}
-
-@Composable
-private fun RoleSelectionContent(component: RoleSelectionComponent) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(text = "Role selection")
-        Button(onClick = component::onNomadSelected) {
-            Text(text = "Continue as nomad")
-        }
-        Button(onClick = component::onTradingStationSelected) {
-            Text(text = "Continue as trading station")
         }
     }
 }
