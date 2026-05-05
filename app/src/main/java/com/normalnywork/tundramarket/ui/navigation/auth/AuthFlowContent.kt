@@ -8,6 +8,7 @@ import com.arkivanov.decompose.extensions.compose.stack.Children
 import com.arkivanov.decompose.extensions.compose.stack.animation.fade
 import com.arkivanov.decompose.extensions.compose.stack.animation.predictiveback.predictiveBackAnimation
 import com.arkivanov.decompose.extensions.compose.stack.animation.stackAnimation
+import com.normalnywork.tundramarket.ui.screens.auth.AuthInitializationContent
 import com.normalnywork.tundramarket.ui.screens.auth.AuthUserInfoContent
 import com.normalnywork.tundramarket.ui.screens.auth.RoleSelectionContent
 
@@ -29,6 +30,7 @@ fun AuthFlowContent(
         when (val instance = child.instance) {
             is AuthFlowComponent.Child.RoleSelection -> RoleSelectionContent(instance.component)
             is AuthFlowComponent.Child.UserInfo -> AuthUserInfoContent(instance.component)
+            is AuthFlowComponent.Child.Initialization -> AuthInitializationContent(instance.component)
         }
     }
 }

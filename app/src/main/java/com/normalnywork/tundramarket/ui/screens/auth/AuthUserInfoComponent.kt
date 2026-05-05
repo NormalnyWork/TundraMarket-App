@@ -18,7 +18,7 @@ class ActualAuthUserInfoComponent(
     componentContext: ComponentContext,
     override val role: UserRole,
     private val onBack: () -> Unit,
-    private val onAuthorized: () -> Unit,
+    private val onAuthorized: (phoneNumber: String, tradingStation: TradingStation?) -> Unit,
     getTradingStationsUseCase: GetTradingStationsUseCase,
 ) : AuthUserInfoComponent, ComponentContext by componentContext {
 
@@ -36,7 +36,9 @@ class ActualAuthUserInfoComponent(
     }
 
     override fun authorize() {
-        onAuthorized.invoke()
+        if (role == UserRole.Nomad || selectedStation.value != null) {
+            onAuthorized.invoke(phoneNumber.text.toString(), selectedStation.value)
+        }
     }
 
     override fun goBack() {
@@ -51,7 +53,7 @@ class ActualAuthUserInfoComponent(
         override fun invoke(
             componentContext: ComponentContext,
             role: UserRole,
-            authorize: () -> Unit,
+            authorize: (phoneNumber: String, tradingStation: TradingStation?) -> Unit,
             goBack: () -> Unit,
         ) = ActualAuthUserInfoComponent(
             componentContext = componentContext,

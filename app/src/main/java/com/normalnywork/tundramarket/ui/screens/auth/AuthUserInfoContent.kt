@@ -1,6 +1,9 @@
 package com.normalnywork.tundramarket.ui.screens.auth
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,6 +18,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.OutputTransformation
 import androidx.compose.foundation.text.input.TextFieldState
@@ -33,8 +37,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
@@ -60,6 +66,7 @@ import com.normalnywork.tundramarket.ui.navigation.auth.AuthUserInfoComponent
 @Composable
 fun AuthUserInfoContent(component: AuthUserInfoComponent) {
     val colors = LocalTMColors.current
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     Scaffold(
         topBar = {
@@ -97,7 +104,10 @@ fun AuthUserInfoContent(component: AuthUserInfoComponent) {
         bottomBar = {
             TMButtonPrimary(
                 text = stringResource(R.string.auth_info_auth_action),
-                onClick = component::authorize,
+                onClick = {
+                    keyboardController?.hide()
+                    component.authorize()
+                },
                 modifier = Modifier
                     .imePadding()
                     .navigationBarsPadding()
@@ -177,6 +187,7 @@ private fun PhoneNumberInput(state: TextFieldState) {
             if (length > 9 + currentOffset)
                 insert(9 + currentOffset, "-")
         },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
     )
 }
 
@@ -210,6 +221,7 @@ private fun TradingStationSelection(
         }
         AnimatedContent(
             targetState = available,
+            transitionSpec = { fadeIn() togetherWith fadeOut() },
             modifier = Modifier
                 .fillMaxWidth()
                 .background(

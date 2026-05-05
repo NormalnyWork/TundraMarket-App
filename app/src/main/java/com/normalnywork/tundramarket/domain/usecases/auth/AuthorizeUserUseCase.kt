@@ -1,15 +1,16 @@
 package com.normalnywork.tundramarket.domain.usecases.auth
 
-import com.normalnywork.tundramarket.domain.entities.TradingStation
 import com.normalnywork.tundramarket.domain.repositories.AuthRepository
+import org.koin.core.annotation.Singleton
 
+@Singleton
 class AuthorizeUserUseCase(private val repository: AuthRepository) {
 
     suspend operator fun invoke(
         phoneNumber: String,
-        tradingStation: TradingStation?,
+        tradingStationId: Int?,
     ) = repository.authorize(
         phoneNumber = phoneNumber,
-        tradingStation = tradingStation,
+        tradingStationId = tradingStationId,
     )
 }

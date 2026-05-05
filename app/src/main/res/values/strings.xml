@@ -16,4 +16,15 @@
     <string name="auth_info_role_change_action">Изменить</string>
     <string name="auth_info_choose_trading_station">Фактория</string>
     <string name="auth_info_auth_action">Продолжить</string>
+
+    <string name="auth_init_title">Инициализация</string>
+    <string name="auth_init_internet_title">Нужен интернет</string>
+    <string name="auth_init_internet_desc">Для первого запуска приложения, необходимо интернет-соединение</string>
+    <string name="auth_init_status_subtitle">Статус</string>
+    <string name="auth_init_stage_queued">В очереди</string>
+    <string name="auth_init_stage_processing">В процессе</string>
+    <string name="auth_init_stage_done">Готово</string>
+    <string name="auth_init_step_auth">Авторизация</string>
+    <string name="auth_init_step_stations">Загрузка факторий</string>
+    <string name="auth_init_step_catalog">Загрузка товаров</string>
 </resources>

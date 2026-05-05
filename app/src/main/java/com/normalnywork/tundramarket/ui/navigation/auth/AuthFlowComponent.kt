@@ -19,6 +19,7 @@ class AuthFlowComponent(
     private val onAuthorizedAsNomad: () -> Unit,
     private val onAuthorizedAsTradingStation: () -> Unit,
     private val authUserInfoComponentFactory: AuthUserInfoComponent.Factory,
+    private val authInitializationComponentFactory: AuthInitializationComponent.Factory,
 ) : ComponentContext by componentContext {
 
     private val navigation = StackNavigation<Config>()
@@ -48,7 +49,25 @@ class AuthFlowComponent(
                     componentContext = componentContext,
                     role = config.role,
                     goBack = navigation::pop,
-                    authorize = {
+                    authorize = { phoneNumber, tradingStation ->
+                        navigation.pushNew(
+                            Config.Initialization(
+                                role = config.role,
+                                phoneNumber = phoneNumber,
+                                tradingStationId = tradingStation?.id,
+                            ),
+                        )
+                    },
+                ),
+            )
+
+            is Config.Initialization -> Child.Initialization(
+                component = authInitializationComponentFactory(
+                    componentContext = componentContext,
+                    role = config.role,
+                    phoneNumber = config.phoneNumber,
+                    tradingStationId = config.tradingStationId,
+                    proceed = {
                         when (config.role) {
                             UserRole.Nomad -> onAuthorizedAsNomad()
                             UserRole.TradingStation -> onAuthorizedAsTradingStation()
@@ -63,7 +82,10 @@ class AuthFlowComponent(
     }
 
     @Singleton
-    class Factory(private val authUserInfoComponentFactory: AuthUserInfoComponent.Factory) {
+    class Factory(
+        private val authUserInfoComponentFactory: AuthUserInfoComponent.Factory,
+        private val authInitializationComponentFactory: AuthInitializationComponent.Factory,
+    ) {
 
         operator fun invoke(
             componentContext: ComponentContext,
@@ -74,12 +96,14 @@ class AuthFlowComponent(
             onAuthorizedAsNomad = onAuthorizedAsNomad,
             onAuthorizedAsTradingStation = onAuthorizedAsTradingStation,
             authUserInfoComponentFactory = authUserInfoComponentFactory,
+            authInitializationComponentFactory = authInitializationComponentFactory,
         )
     }
 
     sealed interface Child {
         class RoleSelection(val component: RoleSelectionComponent) : Child
         class UserInfo(val component: AuthUserInfoComponent) : Child
+        class Initialization(val component: AuthInitializationComponent) : Child
     }
 
     @Serializable
@@ -89,5 +113,12 @@ class AuthFlowComponent(
 
         @Serializable
         data class UserInfo(val role: UserRole) : Config
+
+        @Serializable
+        data class Initialization(
+            val role: UserRole,
+            val phoneNumber: String,
+            val tradingStationId: Int?,
+        ) : Config
     }
 }

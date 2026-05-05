@@ -26,7 +26,7 @@ interface AuthUserInfoComponent {
         operator fun invoke(
             componentContext: ComponentContext,
             role: UserRole,
-            authorize: () -> Unit,
+            authorize: (phoneNumber: String, tradingStation: TradingStation?) -> Unit,
             goBack: () -> Unit,
         ): AuthUserInfoComponent
     }

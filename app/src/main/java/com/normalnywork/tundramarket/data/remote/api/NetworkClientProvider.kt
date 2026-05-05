@@ -15,6 +15,7 @@ import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.resources.Resources
 import io.ktor.serialization.kotlinx.protobuf.protobuf
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.protobuf.ProtoBuf
 import org.koin.core.annotation.Singleton
 import java.util.concurrent.TimeUnit
 
@@ -30,7 +31,9 @@ fun provideNetworkClient(
     }
 
     install(ContentNegotiation) {
-        protobuf()
+        protobuf(
+            ProtoBuf { encodeDefaults = false }
+        )
     }
     install(Auth) {
         bearer {

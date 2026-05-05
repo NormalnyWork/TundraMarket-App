@@ -16,16 +16,16 @@ class ConfigRepositoryImpl(
 
     override fun getTradingStations(): Flow<List<TradingStation>> {
         return localTradingStationsDataSource.getTradingStations()
-            .onEach { list -> if (list.isEmpty()) updateTradingStations() }
+            .onEach { list ->
+                if (list.isEmpty()) {
+                    runCatching { updateTradingStations() }
+                        .onFailure { it.printStackTrace() }
+                }
+            }
     }
 
     override suspend fun updateTradingStations() {
-        runCatching {
-            remoteTradingStationsDataSource.getTradingStations()
-        }.onSuccess {
-            localTradingStationsDataSource.updateTradingStations(it)
-        }.onFailure {
-            it.printStackTrace()
-        }
+        val tradingStations = remoteTradingStationsDataSource.getTradingStations()
+        localTradingStationsDataSource.updateTradingStations(tradingStations)
     }
 }

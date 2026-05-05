@@ -8,6 +8,6 @@ import kotlinx.serialization.protobuf.ProtoNumber
 
 @Serializable
 data class ProtoLocation(
-    @ProtoNumber(1) val longitude: Double,
-    @ProtoNumber(2) val latitude: Double,
+    @ProtoNumber(1) val longitude: Float,
+    @ProtoNumber(2) val latitude: Float,
 )
