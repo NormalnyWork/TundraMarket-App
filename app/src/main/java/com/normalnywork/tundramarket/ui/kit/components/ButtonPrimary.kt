@@ -58,7 +58,7 @@ fun TMButtonPrimary(
                 onClick = onClick,
             )
             .padding(horizontal = ButtonPrimaryTokens.PaddingHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(ButtonPrimaryTokens.Spacing),
+        horizontalArrangement = Arrangement.spacedBy(ButtonPrimaryTokens.Spacing, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {

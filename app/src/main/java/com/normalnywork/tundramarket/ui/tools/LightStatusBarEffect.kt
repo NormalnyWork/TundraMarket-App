@@ -10,7 +10,7 @@ import androidx.compose.runtime.DisposableEffect
 
 @Composable
 fun RequireLightSystemBars() {
-    val activity = LocalActivity.current as ComponentActivity
+    val activity = LocalActivity.current as? ComponentActivity ?: return
 
     DisposableEffect(Unit) {
         activity.enableEdgeToEdge(

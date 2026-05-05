@@ -1,18 +1,26 @@
 package com.normalnywork.tundramarket.ui.screens.auth
 
 import com.arkivanov.decompose.ComponentContext
+import com.normalnywork.tundramarket.ui.navigation.auth.RoleSelectionComponent
 
-class RoleSelectionComponent(
+class ActualRoleSelectionComponent(
     componentContext: ComponentContext,
     private val onNomadSelected: () -> Unit,
     private val onTradingStationSelected: () -> Unit,
-) : ComponentContext by componentContext {
+) : RoleSelectionComponent, ComponentContext by componentContext {
 
-    fun onNomadSelected() {
+    override fun onNomadSelected() {
         onNomadSelected.invoke()
     }
 
-    fun onTradingStationSelected() {
+    override fun onTradingStationSelected() {
         onTradingStationSelected.invoke()
     }
+}
+
+class MockRoleSelectionComponent : RoleSelectionComponent {
+
+    override fun onNomadSelected() {}
+
+    override fun onTradingStationSelected() {}
 }

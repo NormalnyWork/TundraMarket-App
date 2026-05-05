@@ -9,15 +9,16 @@ import com.arkivanov.decompose.router.stack.pop
 import com.arkivanov.decompose.router.stack.pushNew
 import com.arkivanov.decompose.value.Value
 import com.normalnywork.tundramarket.domain.entities.UserRole
-import com.normalnywork.tundramarket.ui.screens.auth.AuthUserInfoComponent
-import com.normalnywork.tundramarket.ui.screens.auth.RoleSelectionComponent
+import com.normalnywork.tundramarket.ui.screens.auth.ActualRoleSelectionComponent
 import kotlinx.serialization.Serializable
+import org.koin.core.annotation.Singleton
 
 @OptIn(DelicateDecomposeApi::class)
 class AuthFlowComponent(
     componentContext: ComponentContext,
     private val onAuthorizedAsNomad: () -> Unit,
     private val onAuthorizedAsTradingStation: () -> Unit,
+    private val authUserInfoComponentFactory: AuthUserInfoComponent.Factory,
 ) : ComponentContext by componentContext {
 
     private val navigation = StackNavigation<Config>()
@@ -33,7 +34,7 @@ class AuthFlowComponent(
     private fun child(config: Config, componentContext: ComponentContext): Child =
         when (config) {
             Config.RoleSelection -> Child.RoleSelection(
-                component = RoleSelectionComponent(
+                component = ActualRoleSelectionComponent(
                     componentContext = componentContext,
                     onNomadSelected = { navigation.pushNew(Config.UserInfo(UserRole.Nomad)) },
                     onTradingStationSelected = {
@@ -43,11 +44,11 @@ class AuthFlowComponent(
             )
 
             is Config.UserInfo -> Child.UserInfo(
-                component = AuthUserInfoComponent(
+                component = authUserInfoComponentFactory(
                     componentContext = componentContext,
                     role = config.role,
-                    onBack = navigation::pop,
-                    onAuthorized = {
+                    goBack = navigation::pop,
+                    authorize = {
                         when (config.role) {
                             UserRole.Nomad -> onAuthorizedAsNomad()
                             UserRole.TradingStation -> onAuthorizedAsTradingStation()
@@ -57,13 +58,28 @@ class AuthFlowComponent(
             )
         }
 
+    fun onBackClicked() {
+        navigation.pop()
+    }
+
+    @Singleton
+    class Factory(private val authUserInfoComponentFactory: AuthUserInfoComponent.Factory) {
+
+        operator fun invoke(
+            componentContext: ComponentContext,
+            onAuthorizedAsNomad: () -> Unit,
+            onAuthorizedAsTradingStation: () -> Unit,
+        ) = AuthFlowComponent(
+            componentContext = componentContext,
+            onAuthorizedAsNomad = onAuthorizedAsNomad,
+            onAuthorizedAsTradingStation = onAuthorizedAsTradingStation,
+            authUserInfoComponentFactory = authUserInfoComponentFactory,
+        )
+    }
+
     sealed interface Child {
         class RoleSelection(val component: RoleSelectionComponent) : Child
         class UserInfo(val component: AuthUserInfoComponent) : Child
-    }
-
-    fun onBackClicked() {
-        navigation.pop()
     }
 
     @Serializable

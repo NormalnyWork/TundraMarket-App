@@ -36,38 +36,27 @@ import com.normalnywork.tundramarket.ui.kit.style.LocalTMColors
 import com.normalnywork.tundramarket.ui.kit.style.LocalTMTypography
 import com.normalnywork.tundramarket.ui.kit.style.TMPreviewWrapperProvider
 import com.normalnywork.tundramarket.ui.kit.style.TMShapes
+import com.normalnywork.tundramarket.ui.navigation.auth.RoleSelectionComponent
 import com.normalnywork.tundramarket.ui.tools.RequireLightSystemBars
 
 @Composable
 fun RoleSelectionContent(component: RoleSelectionComponent) {
-    RequireLightSystemBars()
-
-    RoleSelectionScreen(
-        onNomadSelected = component::onNomadSelected,
-        onTradingStationSelected = component::onTradingStationSelected,
-    )
-}
-
-@Composable
-private fun RoleSelectionScreen(
-    onNomadSelected: () -> Unit,
-    onTradingStationSelected: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
     val colors = LocalTMColors.current
 
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .background(colors.primary)
             .systemBarsPadding(),
     ) {
         MainContent(
-            onNomadSelected = onNomadSelected,
-            onTradingStationSelected = onTradingStationSelected,
+            onNomadSelected = component::onNomadSelected,
+            onTradingStationSelected = component::onTradingStationSelected,
         )
         AppVersionPreview()
     }
+
+    RequireLightSystemBars()
 }
 
 @Composable
@@ -282,9 +271,6 @@ private fun RoleSelectionItem(
 @PreviewWrapper(TMPreviewWrapperProvider::class)
 @Preview(showSystemUi = true)
 @Composable
-private fun RoleSelectionScreenPreview() {
-    RoleSelectionScreen(
-        onNomadSelected = {},
-        onTradingStationSelected = {},
-    )
+private fun Preview() {
+    RoleSelectionContent(component = MockRoleSelectionComponent())
 }

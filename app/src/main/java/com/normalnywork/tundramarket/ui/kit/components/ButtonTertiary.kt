@@ -3,6 +3,7 @@ package com.normalnywork.tundramarket.ui.kit.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
@@ -10,9 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,10 +57,12 @@ fun TMButtonTertiary(
             .clickable(
                 enabled = enabled,
                 role = Role.Button,
+                indication = ripple(color = colors.rippleColor),
+                interactionSource = remember { MutableInteractionSource() },
                 onClick = onClick,
             )
             .padding(horizontal = ButtonTertiaryTokens.PaddingHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(ButtonTertiaryTokens.Spacing),
+        horizontalArrangement = Arrangement.spacedBy(ButtonTertiaryTokens.Spacing, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
@@ -81,7 +86,7 @@ fun TMButtonTertiary(
 
 private object ButtonTertiaryTokens {
 
-    val Height = 56.dp
+    val Height = 48.dp
     val IconSize = 24.dp
     val PaddingHorizontal = 16.dp
     val Spacing = 12.dp
@@ -113,7 +118,7 @@ data class TMButtonTertiaryColors(
         val Default: TMButtonTertiaryColors
             @Composable
             get() = TMButtonTertiaryColors(
-                strokeColor = LocalTMColors.current.stroke,
+                strokeColor = LocalTMColors.current.primaryVariant,
                 disabledStrokeColor = LocalTMColors.current.stroke.copy(alpha = 0.5f),
                 contentColor = LocalTMColors.current.primary,
                 disabledContentColor = LocalTMColors.current.primary.copy(alpha = 0.5f),

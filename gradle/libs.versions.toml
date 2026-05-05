@@ -8,6 +8,7 @@ androidx-activity = "1.13.0"
 kotlinxSerialization = "1.11.0"
 
 koin = "4.2.1"
+koin-plugin = "1.0.0-RC2"
 decompose = "3.5.0"
 essenty = "2.5.0"
 ktor = "3.4.3"
@@ -22,10 +23,11 @@ compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = 
 compose-ui = { group = "androidx.compose.ui", name = "ui" }
 compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+compose-material3 = { group = "androidx.compose.material3", name = "material3", version = "1.5.0-alpha18" }
 
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin" }
 koin-android = { module = "io.insert-koin:koin-android" }
+koin-annotations = { module = "io.insert-koin:koin-annotations" }
 koin-compose = { module = "io.insert-koin:koin-androidx-compose" }
 
 decompose = { module = "com.arkivanov.decompose:decompose", version.ref = "decompose" }
@@ -41,6 +43,7 @@ ktor-resources = { module = "io.ktor:ktor-client-resources", version.ref = "ktor
 ktor-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-protobuf = { module = "io.ktor:ktor-serialization-kotlinx-protobuf", version.ref = "ktor" }
 ktor-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-auth = { module = "io.ktor:ktor-client-auth", version.ref = "ktor" }
 
 paging-common = { module = "androidx.paging:paging-common", version.ref = "paging" }
 paging-compose = { module = "androidx.paging:paging-compose", version.ref = "paging" }
@@ -54,8 +57,8 @@ kotlinx-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-
 
 [bundles]
 decompose = ["decompose", "decompose-extensions", "essenty-lifecycle", "essenty-backHandler", "essenty-instanceKeeper", "essenty-stateKeeper"]
-ktor = ["ktor-client-core", "ktor-logging", "ktor-okhttp", "ktor-resources", "ktor-negotiation", "ktor-protobuf"]
-koin = ["koin-compose", "koin-android"]
+ktor = ["ktor-client-core", "ktor-logging", "ktor-okhttp", "ktor-resources", "ktor-negotiation", "ktor-protobuf", "ktor-auth"]
+koin = ["koin-compose", "koin-android", "koin-annotations"]
 compose = ["compose-ui", "compose-material3", "compose-ui-tooling-preview"]
 paging = ["paging-common", "paging-compose"]
 room = ["room-runtime", "room-ktx"]
@@ -65,3 +68,4 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+koin-compiler = { id = "io.insert-koin.compiler.plugin", version.ref = "koin-plugin" }

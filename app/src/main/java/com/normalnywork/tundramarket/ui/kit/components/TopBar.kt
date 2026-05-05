@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -44,8 +45,9 @@ fun TMTopBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(TopBarTokens.Height)
                 .background(LocalTMColors.current.background)
+                .statusBarsPadding()
+                .height(TopBarTokens.Height)
                 .padding(horizontal = TopBarTokens.PaddingHorizontal),
             horizontalArrangement = Arrangement.spacedBy(TopBarTokens.Spacing),
             verticalAlignment = Alignment.CenterVertically,

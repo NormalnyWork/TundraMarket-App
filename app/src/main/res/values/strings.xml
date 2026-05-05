@@ -9,4 +9,11 @@
     <string name="auth_role_nomad_desc">Я делаю заказы</string>
     <string name="auth_role_trading_station">Фактория</string>
     <string name="auth_role_trading_station_desc">Я обрабатываю заказы</string>
+
+    <string name="auth_info_title">Авторизация</string>
+    <string name="auth_info_phone_label">Номер телефона</string>
+    <string name="auth_info_role_title">Ваша роль</string>
+    <string name="auth_info_role_change_action">Изменить</string>
+    <string name="auth_info_choose_trading_station">Фактория</string>
+    <string name="auth_info_auth_action">Продолжить</string>
 </resources>

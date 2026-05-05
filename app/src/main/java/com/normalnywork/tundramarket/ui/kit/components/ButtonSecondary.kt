@@ -58,7 +58,7 @@ fun TMButtonSecondary(
                 onClick = onClick,
             )
             .padding(horizontal = ButtonSecondaryTokens.PaddingHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(ButtonSecondaryTokens.Spacing),
+        horizontalArrangement = Arrangement.spacedBy(ButtonSecondaryTokens.Spacing, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {

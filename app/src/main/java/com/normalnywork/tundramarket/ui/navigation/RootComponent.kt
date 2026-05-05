@@ -10,9 +10,11 @@ import com.normalnywork.tundramarket.ui.navigation.auth.AuthFlowComponent
 import com.normalnywork.tundramarket.ui.navigation.nomad.NomadFlowComponent
 import com.normalnywork.tundramarket.ui.navigation.tradingstation.TradingStationFlowComponent
 import kotlinx.serialization.Serializable
+import org.koin.core.annotation.Singleton
 
 class RootComponent(
     componentContext: ComponentContext,
+    private val authFlowComponentFactory: AuthFlowComponent.Factory,
 ) : ComponentContext by componentContext {
 
     private val navigation = StackNavigation<Config>()
@@ -28,7 +30,7 @@ class RootComponent(
     private fun child(config: Config, componentContext: ComponentContext): Child =
         when (config) {
             Config.Auth -> Child.Auth(
-                component = AuthFlowComponent(
+                component = authFlowComponentFactory(
                     componentContext = componentContext,
                     onAuthorizedAsNomad = { navigation.replaceAll(Config.Nomad) },
                     onAuthorizedAsTradingStation = { navigation.replaceAll(Config.TradingStation) },
@@ -47,6 +49,15 @@ class RootComponent(
                 ),
             )
         }
+
+    @Singleton
+    class Factory(private val authFlowComponentFactory: AuthFlowComponent.Factory) {
+
+        operator fun invoke(componentContext: ComponentContext) = RootComponent(
+            componentContext = componentContext,
+            authFlowComponentFactory = authFlowComponentFactory,
+        )
+    }
 
     sealed interface Child {
         class Auth(val component: AuthFlowComponent) : Child
