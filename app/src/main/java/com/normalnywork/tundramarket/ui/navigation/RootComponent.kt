@@ -3,10 +3,11 @@ package com.normalnywork.tundramarket.ui.navigation
 import com.arkivanov.decompose.ComponentContext
 import com.arkivanov.decompose.router.stack.ChildStack
 import com.arkivanov.decompose.router.stack.StackNavigation
+import com.arkivanov.decompose.router.stack.active
 import com.arkivanov.decompose.router.stack.childStack
 import com.arkivanov.decompose.router.stack.replaceAll
 import com.arkivanov.decompose.value.Value
-import com.normalnywork.tundramarket.domain.entities.AppStartDestination
+import com.normalnywork.tundramarket.domain.entities.UserRole
 import com.normalnywork.tundramarket.ui.navigation.auth.AuthFlowComponent
 import com.normalnywork.tundramarket.ui.navigation.nomad.NomadFlowComponent
 import com.normalnywork.tundramarket.ui.navigation.tradingstation.TradingStationFlowComponent
@@ -15,7 +16,7 @@ import org.koin.core.annotation.Singleton
 
 class RootComponent(
     componentContext: ComponentContext,
-    startDestination: AppStartDestination,
+    userRole: UserRole?,
     private val authFlowComponentFactory: AuthFlowComponent.Factory,
 ) : ComponentContext by componentContext {
 
@@ -24,7 +25,7 @@ class RootComponent(
     val childStack: Value<ChildStack<Config, Child>> = childStack(
         source = navigation,
         serializer = Config.serializer(),
-        initialConfiguration = startDestination.toConfig(),
+        initialConfiguration = userRole.toStartConfig(),
         handleBackButton = true,
         childFactory = ::child,
     )
@@ -52,10 +53,18 @@ class RootComponent(
             )
         }
 
-    private fun AppStartDestination.toConfig() = when (this) {
-        AppStartDestination.Auth -> Config.Auth
-        AppStartDestination.Nomad -> Config.Nomad
-        AppStartDestination.TradingStation -> Config.TradingStation
+    fun onBackClicked() {
+        when (val instance = childStack.active.instance) {
+            is Child.Auth -> instance.component.onBackClicked()
+            is Child.Nomad -> instance.component.onBackClicked()
+            is Child.TradingStation -> instance.component.onBackClicked()
+        }
+    }
+
+    private fun UserRole?.toStartConfig() = when (this) {
+        UserRole.Nomad -> Config.Nomad
+        UserRole.TradingStation -> Config.TradingStation
+        null -> Config.Auth
     }
 
     @Singleton
@@ -63,10 +72,10 @@ class RootComponent(
 
         operator fun invoke(
             componentContext: ComponentContext,
-            startDestination: AppStartDestination,
+            userRole: UserRole?,
         ) = RootComponent(
             componentContext = componentContext,
-            startDestination = startDestination,
+            userRole = userRole,
             authFlowComponentFactory = authFlowComponentFactory,
         )
     }

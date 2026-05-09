@@ -16,7 +16,11 @@ class AuthorizeUserUseCase(private val repository: AuthRepository) {
             tradingStationId = tradingStationId,
         )
         repository.saveUserRole(
-            role = if (tradingStationId == null) UserRole.Nomad else UserRole.TradingStation,
+            role = if (tradingStationId == null) {
+                UserRole.Nomad
+            } else {
+                UserRole.TradingStation
+            },
         )
     }
 }

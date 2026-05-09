@@ -23,14 +23,14 @@ class AuthRepositoryImpl(
             tradingStationId = tradingStationId,
         )
         authTokenStore.saveToken(token)
+        userSessionStore.saveIsLoggedIn(true)
     }
 
     override suspend fun isLoggedIn() = userSessionStore.isLoggedIn()
 
-    override suspend fun saveIsLoggedIn(isLoggedIn: Boolean) {
-        userSessionStore.saveIsLoggedIn(isLoggedIn)
-    }
-
+    /**
+     * @return `null` if unauthorized, one of `UserRole` otherwise
+     */
     override suspend fun getUserRole() = userSessionStore.getUserRole()
 
     override suspend fun saveUserRole(role: UserRole) {

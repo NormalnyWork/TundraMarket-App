@@ -11,8 +11,9 @@ interface AuthRepository {
 
     suspend fun isLoggedIn(): Boolean
 
-    suspend fun saveIsLoggedIn(isLoggedIn: Boolean)
-
+    /**
+    * @return `null` if unauthorized, one of `UserRole` otherwise
+    */
     suspend fun getUserRole(): UserRole?
 
     suspend fun saveUserRole(role: UserRole)

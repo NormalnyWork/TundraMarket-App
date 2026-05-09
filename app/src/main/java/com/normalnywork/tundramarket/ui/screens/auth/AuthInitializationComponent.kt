@@ -4,7 +4,6 @@ import com.arkivanov.decompose.ComponentContext
 import com.arkivanov.essenty.instancekeeper.getOrCreate
 import com.normalnywork.tundramarket.domain.entities.UserRole
 import com.normalnywork.tundramarket.domain.usecases.auth.AuthorizeUserUseCase
-import com.normalnywork.tundramarket.domain.usecases.auth.SaveIsLoggedInUseCase
 import com.normalnywork.tundramarket.domain.usecases.products.InitializeCatalogUseCase
 import com.normalnywork.tundramarket.domain.usecases.products.InitializeTradingStationsUseCase
 import com.normalnywork.tundramarket.ui.navigation.auth.AuthInitializationComponent
@@ -28,7 +27,6 @@ class ActualAuthInitializationComponent(
     private val tradingStationId: Int?,
     private val proceed: () -> Unit,
     private val authorizeUserUseCase: AuthorizeUserUseCase,
-    private val saveIsLoggedInUseCase: SaveIsLoggedInUseCase,
     private val initializeTradingStationsUseCase: InitializeTradingStationsUseCase,
     private val initializeCatalogUseCase: InitializeCatalogUseCase,
     networkStatusObserver: NetworkStatusObserver,
@@ -78,7 +76,6 @@ class ActualAuthInitializationComponent(
             }
         }
 
-        saveIsLoggedInUseCase(true)
         proceed()
     }
 
@@ -121,7 +118,6 @@ class ActualAuthInitializationComponent(
     @Singleton
     class Factory(
         private val authorizeUserUseCase: AuthorizeUserUseCase,
-        private val saveIsLoggedInUseCase: SaveIsLoggedInUseCase,
         private val initializeTradingStationsUseCase: InitializeTradingStationsUseCase,
         private val initializeCatalogUseCase: InitializeCatalogUseCase,
         private val networkStatusObserver: NetworkStatusObserver,
@@ -140,7 +136,6 @@ class ActualAuthInitializationComponent(
             tradingStationId = tradingStationId,
             proceed = proceed,
             authorizeUserUseCase = authorizeUserUseCase,
-            saveIsLoggedInUseCase = saveIsLoggedInUseCase,
             initializeTradingStationsUseCase = initializeTradingStationsUseCase,
             initializeCatalogUseCase = initializeCatalogUseCase,
             networkStatusObserver = networkStatusObserver,
