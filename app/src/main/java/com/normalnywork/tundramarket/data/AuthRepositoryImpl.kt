@@ -1,7 +1,9 @@
 package com.normalnywork.tundramarket.data
 
+import com.normalnywork.tundramarket.data.local.preferences.UserSessionStore
 import com.normalnywork.tundramarket.data.remote.api.auth.AuthTokenStore
 import com.normalnywork.tundramarket.data.remote.source.RemoteAuthDataSource
+import com.normalnywork.tundramarket.domain.entities.UserRole
 import com.normalnywork.tundramarket.domain.repositories.AuthRepository
 import org.koin.core.annotation.Singleton
 
@@ -9,6 +11,7 @@ import org.koin.core.annotation.Singleton
 class AuthRepositoryImpl(
     private val remoteAuthDataSource: RemoteAuthDataSource,
     private val authTokenStore: AuthTokenStore,
+    private val userSessionStore: UserSessionStore,
 ) : AuthRepository {
 
     override suspend fun authorize(
@@ -20,5 +23,17 @@ class AuthRepositoryImpl(
             tradingStationId = tradingStationId,
         )
         authTokenStore.saveToken(token)
+    }
+
+    override suspend fun isLoggedIn() = userSessionStore.isLoggedIn()
+
+    override suspend fun saveIsLoggedIn(isLoggedIn: Boolean) {
+        userSessionStore.saveIsLoggedIn(isLoggedIn)
+    }
+
+    override suspend fun getUserRole() = userSessionStore.getUserRole()
+
+    override suspend fun saveUserRole(role: UserRole) {
+        userSessionStore.setUserRole(role)
     }
 }

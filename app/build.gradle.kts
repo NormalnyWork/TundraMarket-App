@@ -47,6 +47,8 @@ dependencies {
     implementation(platform(libs.compose.bom))
     implementation(libs.bundles.compose)
     debugImplementation(libs.compose.ui.tooling)
+    // Splash screen
+    implementation(libs.androidx.core.splashscreen)
     // DI
     implementation(platform(libs.koin.bom))
     implementation(libs.bundles.koin)

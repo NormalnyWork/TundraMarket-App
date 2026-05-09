@@ -20,7 +20,8 @@
             android:enableOnBackInvokedCallback="true"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.TundraMarket">
+            android:theme="@style/Theme.TundraMarket.Splash"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
