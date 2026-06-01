@@ -15,7 +15,7 @@ import com.arkivanov.decompose.extensions.compose.experimental.stack.animation.P
 import com.arkivanov.decompose.extensions.compose.experimental.stack.animation.stackAnimation
 import com.arkivanov.decompose.extensions.compose.stack.animation.predictiveback.androidPredictiveBackAnimatableV2
 import com.normalnywork.tundramarket.ui.navigation.android13NavigationTransition
-import com.normalnywork.tundramarket.ui.screens.nomad.NomadCreateOrderComponent
+import com.normalnywork.tundramarket.ui.screens.nomad.NomadCreateOrderContent
 import com.normalnywork.tundramarket.ui.screens.nomad.NomadHistoryComponent
 import com.normalnywork.tundramarket.ui.screens.nomad.NomadMainComponent
 import com.normalnywork.tundramarket.ui.screens.nomad.NomadOrderDetailsComponent
@@ -101,17 +101,3 @@ private fun NomadOrderDetailsContent(component: NomadOrderDetailsComponent) {
     }
 }
 
-@Composable
-private fun NomadCreateOrderContent(component: NomadCreateOrderComponent) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(text = "Nomad create order")
-        Button(onClick = component::onBackClicked) {
-            Text(text = "Back")
-        }
-    }
-}

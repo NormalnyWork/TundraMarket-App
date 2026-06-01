@@ -30,7 +30,7 @@ import com.normalnywork.tundramarket.ui.kit.style.TMPreviewWrapperProvider
 import com.normalnywork.tundramarket.ui.kit.style.TMShapes
 
 @Composable
-private fun StageBar(
+fun StageBar(
     range: IntRange,
     current: Int,
     modifier: Modifier = Modifier,
@@ -53,7 +53,7 @@ private fun StageBar(
                 selected = current == stage,
                 onClick = updateStage?.let {
                     { updateStage(stage) }
-                },
+                }.takeIf { stage <= current + 1 },
                 colors = indicatorColors,
                 shape = indicatorShape,
             )
