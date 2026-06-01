@@ -18,6 +18,7 @@ class RootComponent(
     componentContext: ComponentContext,
     userRole: UserRole?,
     private val authFlowComponentFactory: AuthFlowComponent.Factory,
+    private val nomadFlowComponentFactory: NomadFlowComponent.Factory,
 ) : ComponentContext by componentContext {
 
     private val navigation = StackNavigation<Config>()
@@ -41,7 +42,7 @@ class RootComponent(
             )
 
             Config.Nomad -> Child.Nomad(
-                component = NomadFlowComponent(
+                component = nomadFlowComponentFactory(
                     componentContext = componentContext,
                 ),
             )
@@ -68,7 +69,10 @@ class RootComponent(
     }
 
     @Singleton
-    class Factory(private val authFlowComponentFactory: AuthFlowComponent.Factory) {
+    class Factory(
+        private val authFlowComponentFactory: AuthFlowComponent.Factory,
+        private val nomadFlowComponentFactory: NomadFlowComponent.Factory,
+    ) {
 
         operator fun invoke(
             componentContext: ComponentContext,
@@ -77,6 +81,7 @@ class RootComponent(
             componentContext = componentContext,
             userRole = userRole,
             authFlowComponentFactory = authFlowComponentFactory,
+            nomadFlowComponentFactory = nomadFlowComponentFactory,
         )
     }
 

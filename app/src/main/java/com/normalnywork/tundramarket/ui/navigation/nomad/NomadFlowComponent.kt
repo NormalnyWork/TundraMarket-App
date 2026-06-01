@@ -8,15 +8,17 @@ import com.arkivanov.decompose.router.stack.childStack
 import com.arkivanov.decompose.router.stack.pop
 import com.arkivanov.decompose.router.stack.pushNew
 import com.arkivanov.decompose.value.Value
-import com.normalnywork.tundramarket.ui.screens.nomad.NomadCreateOrderComponent
 import com.normalnywork.tundramarket.ui.screens.nomad.NomadHistoryComponent
 import com.normalnywork.tundramarket.ui.screens.nomad.NomadMainComponent
 import com.normalnywork.tundramarket.ui.screens.nomad.NomadOrderDetailsComponent
+import com.normalnywork.tundramarket.ui.screens.nomad.neworder.NomadCreateOrderComponent
 import kotlinx.serialization.Serializable
+import org.koin.core.annotation.Singleton
 
 @OptIn(DelicateDecomposeApi::class)
 class NomadFlowComponent(
     componentContext: ComponentContext,
+    private val nomadCreateOrderComponentFactory: NomadCreateOrderComponent.Factory,
 ) : ComponentContext by componentContext {
 
     private val navigation = StackNavigation<Config>()
@@ -56,7 +58,7 @@ class NomadFlowComponent(
             )
 
             Config.CreateOrder -> Child.CreateOrder(
-                component = NomadCreateOrderComponent(
+                component = nomadCreateOrderComponentFactory(
                     componentContext = componentContext,
                     onBack = navigation::pop,
                 ),
@@ -87,5 +89,14 @@ class NomadFlowComponent(
 
         @Serializable
         data class OrderDetails(val orderId: Int) : Config
+    }
+
+    @Singleton
+    class Factory(private val nomadCreateOrderComponentFactory: NomadCreateOrderComponent.Factory) {
+
+        operator fun invoke(componentContext: ComponentContext) = NomadFlowComponent(
+            componentContext = componentContext,
+            nomadCreateOrderComponentFactory = nomadCreateOrderComponentFactory,
+        )
     }
 }
