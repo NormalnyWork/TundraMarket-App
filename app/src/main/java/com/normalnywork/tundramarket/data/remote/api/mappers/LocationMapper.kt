@@ -7,3 +7,8 @@ fun ProtoLocation.toDomain() = Location(
     latitude = latitude,
     longitude = longitude,
 )
+
+fun Location.toProto() = ProtoLocation(
+    longitude = longitude,
+    latitude = latitude,
+)

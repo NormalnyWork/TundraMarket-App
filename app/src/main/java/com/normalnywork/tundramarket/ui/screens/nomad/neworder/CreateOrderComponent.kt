@@ -14,6 +14,7 @@ import com.normalnywork.tundramarket.domain.entities.Location
 import com.normalnywork.tundramarket.domain.entities.Product
 import com.normalnywork.tundramarket.domain.entities.TradingStation
 import com.normalnywork.tundramarket.domain.usecases.config.GetTradingStationsUseCase
+import com.normalnywork.tundramarket.domain.usecases.orders.CreateOrderUseCase
 import com.normalnywork.tundramarket.domain.usecases.products.GetCatalogUseCase
 import com.normalnywork.tundramarket.ui.tools.BaseStateHolder
 import com.normalnywork.tundramarket.utils.CoordinateDistanceCalculator.distanceTo
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.koin.core.annotation.Singleton
 
@@ -30,6 +32,7 @@ class NomadCreateOrderComponent(
     private val onBack: () -> Unit,
     getTradingStationsUseCase: GetTradingStationsUseCase,
     getCatalogUseCase: GetCatalogUseCase,
+    private val createOrderUseCase: CreateOrderUseCase,
 ) : ComponentContext by componentContext {
 
     private val stateHolder = instanceKeeper.getOrCreate { StateHolder() }
@@ -120,7 +123,35 @@ class NomadCreateOrderComponent(
         onNextPageClicked()
     }
 
-    fun onCreateOrderClicked() = Unit
+    fun onCreateOrderClicked() {
+        if (stateHolder.isCreatingOrder.value) return
+
+        val location = currentLocation() ?: return
+        val tradingStation = selectedTradingStation.value ?: return
+        val productQuantities = selectedProductQuantities.value
+        val cart = catalog.value.mapNotNull { product ->
+            productQuantities[product.id]
+                ?.takeIf { quantity -> quantity > 0 }
+                ?.let { quantity -> product to quantity }
+        }
+
+        if (cart.isEmpty()) return
+
+        stateHolder.isCreatingOrder.value = true
+        stateHolder.scope.launch {
+            try {
+                createOrderUseCase(
+                    tradingStation = tradingStation,
+                    cart = cart,
+                    location = location,
+                    comment = comment.text.toString().trim(),
+                )
+                onBack.invoke()
+            } finally {
+                stateHolder.isCreatingOrder.value = false
+            }
+        }
+    }
 
     fun onPageSelected(index: Int) {
         val pages = childPages.value
@@ -217,6 +248,7 @@ class NomadCreateOrderComponent(
         val comment = TextFieldState()
         val selectedTradingStation = MutableStateFlow<TradingStation?>(null)
         val selectedProductQuantities = MutableStateFlow<Map<Int, Int>>(emptyMap())
+        val isCreatingOrder = MutableStateFlow(false)
     }
 
     private companion object {
@@ -231,6 +263,7 @@ class NomadCreateOrderComponent(
     class Factory(
         private val getTradingStationsUseCase: GetTradingStationsUseCase,
         private val getCatalogUseCase: GetCatalogUseCase,
+        private val createOrderUseCase: CreateOrderUseCase,
     ) {
 
         operator fun invoke(
@@ -241,6 +274,7 @@ class NomadCreateOrderComponent(
             onBack = onBack,
             getTradingStationsUseCase = getTradingStationsUseCase,
             getCatalogUseCase = getCatalogUseCase,
+            createOrderUseCase = createOrderUseCase,
         )
     }
 }

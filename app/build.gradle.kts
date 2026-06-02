@@ -64,4 +64,6 @@ dependencies {
     ksp(libs.room.compiler)
     // DataStore
     implementation(libs.datastore)
+    // WorkManager
+    implementation(libs.workmanager)
 }

@@ -18,6 +18,7 @@ import org.koin.core.annotation.Singleton
 @OptIn(DelicateDecomposeApi::class)
 class NomadFlowComponent(
     componentContext: ComponentContext,
+    private val nomadMainComponentFactory: NomadMainComponent.Factory,
     private val nomadCreateOrderComponentFactory: NomadCreateOrderComponent.Factory,
 ) : ComponentContext by componentContext {
 
@@ -34,7 +35,7 @@ class NomadFlowComponent(
     private fun child(config: Config, componentContext: ComponentContext): Child =
         when (config) {
             Config.Main -> Child.Main(
-                component = NomadMainComponent(
+                component = nomadMainComponentFactory(
                     componentContext = componentContext,
                     onOpenHistory = { navigation.pushNew(Config.History) },
                     onCreateOrder = { navigation.pushNew(Config.CreateOrder) },
@@ -92,10 +93,14 @@ class NomadFlowComponent(
     }
 
     @Singleton
-    class Factory(private val nomadCreateOrderComponentFactory: NomadCreateOrderComponent.Factory) {
+    class Factory(
+        private val nomadMainComponentFactory: NomadMainComponent.Factory,
+        private val nomadCreateOrderComponentFactory: NomadCreateOrderComponent.Factory,
+    ) {
 
         operator fun invoke(componentContext: ComponentContext) = NomadFlowComponent(
             componentContext = componentContext,
+            nomadMainComponentFactory = nomadMainComponentFactory,
             nomadCreateOrderComponentFactory = nomadCreateOrderComponentFactory,
         )
     }

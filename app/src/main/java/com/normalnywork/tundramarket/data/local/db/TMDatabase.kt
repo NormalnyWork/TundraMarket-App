@@ -6,7 +6,9 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.normalnywork.tundramarket.data.local.db.dao.OrdersDao
 import com.normalnywork.tundramarket.data.local.db.dao.ProductsDao
+import com.normalnywork.tundramarket.data.local.db.dao.SyncOutboxDao
 import com.normalnywork.tundramarket.data.local.db.dao.TradingStationsDao
 import com.normalnywork.tundramarket.data.local.db.entities.DB_PRODUCT_COL_DETAILS
 import com.normalnywork.tundramarket.data.local.db.entities.DB_PRODUCT_COL_ID
@@ -14,7 +16,11 @@ import com.normalnywork.tundramarket.data.local.db.entities.DB_PRODUCT_COL_NAME
 import com.normalnywork.tundramarket.data.local.db.entities.DB_PRODUCT_COL_VOLUME
 import com.normalnywork.tundramarket.data.local.db.entities.DB_PRODUCT_COL_WEIGHT
 import com.normalnywork.tundramarket.data.local.db.entities.DB_PRODUCT_TABLE_NAME
+import com.normalnywork.tundramarket.data.local.db.entities.OrderEntity
+import com.normalnywork.tundramarket.data.local.db.entities.OrderProductEntity
+import com.normalnywork.tundramarket.data.local.db.entities.OrderStatusHistoryEntity
 import com.normalnywork.tundramarket.data.local.db.entities.ProductEntity
+import com.normalnywork.tundramarket.data.local.db.entities.SyncOutboxEntity
 import com.normalnywork.tundramarket.data.local.db.entities.TradingStationEntity
 import org.koin.core.annotation.Singleton
 
@@ -22,14 +28,22 @@ import org.koin.core.annotation.Singleton
     entities = [
         ProductEntity::class,
         TradingStationEntity::class,
+        OrderEntity::class,
+        OrderProductEntity::class,
+        OrderStatusHistoryEntity::class,
+        SyncOutboxEntity::class,
     ],
-    version = 2,
+    version = 3,
 )
 abstract class TMDatabase : RoomDatabase() {
 
     abstract fun productsDao(): ProductsDao
 
     abstract fun tradingStationsDao(): TradingStationsDao
+
+    abstract fun ordersDao(): OrdersDao
+
+    abstract fun syncOutboxDao(): SyncOutboxDao
 }
 
 @Singleton
@@ -47,6 +61,16 @@ fun provideTradingStationsDao(database: TMDatabase): TradingStationsDao {
 @Singleton
 fun provideProductsDao(database: TMDatabase): ProductsDao {
     return database.productsDao()
+}
+
+@Singleton
+fun provideOrdersDao(database: TMDatabase): OrdersDao {
+    return database.ordersDao()
+}
+
+@Singleton
+fun provideSyncOutboxDao(database: TMDatabase): SyncOutboxDao {
+    return database.syncOutboxDao()
 }
 
 private val MIGRATION_1_2 = object : Migration(1, 2) {

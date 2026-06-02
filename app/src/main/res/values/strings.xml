@@ -28,6 +28,18 @@
     <string name="auth_init_step_stations">Загрузка факторий</string>
     <string name="auth_init_step_catalog">Загрузка товаров</string>
 
+    <string name="nomad_main_title">Главная</string>
+    <string name="nomad_main_order_status_title">Текущий заказ</string>
+    <string name="nomad_main_order_status_loading">Загрузка состояния заказа...</string>
+    <string name="nomad_main_order_status_empty">Активного заказа нет</string>
+    <string name="nomad_main_order_status_order">Заказ №%1$d: %2$s</string>
+    <string name="nomad_main_order_status_enqueued">ожидает отправки</string>
+    <string name="nomad_main_order_status_processing">отправляется на сервер</string>
+    <string name="nomad_main_order_status_failed">не удалось отправить</string>
+    <string name="nomad_main_order_status_created">создан на сервере</string>
+    <string name="nomad_main_history_action">История</string>
+    <string name="nomad_main_create_order_action">Создать заказ</string>
+
     <string name="nomad_create_order_title">Новый заказ</string>
     <string name="nomad_create_order_location_page">Location</string>
     <string name="nomad_create_order_trading_station_page">TradingStation</string>
