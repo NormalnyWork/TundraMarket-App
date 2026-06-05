@@ -68,6 +68,28 @@ fun TMTopBar(
 }
 
 @Composable
+fun TMCompactTopBar(title: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(LocalTMColors.current.background)
+            .statusBarsPadding()
+            .height(TopBarTokens.HeightCompact)
+            .padding(horizontal = TopBarTokens.PaddingHorizontal),
+        horizontalArrangement = Arrangement.spacedBy(TopBarTokens.Spacing),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = title.uppercase(),
+            style = LocalTMTypography.current.title,
+            color = LocalTMColors.current.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
 private fun TMTopBarBackButton(onBack: () -> Unit) {
     Box(
         modifier = Modifier
@@ -100,6 +122,7 @@ private fun TMTopBarDivider(shown: Boolean) {
 private object TopBarTokens {
 
     val Height = 64.dp
+    val HeightCompact = 48.dp
     val IconSize = 24.dp
     val IconContainerSize = 40.dp
     val PaddingHorizontal = 16.dp

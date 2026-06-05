@@ -37,7 +37,9 @@
     <string name="nomad_main_order_status_processing">отправляется на сервер</string>
     <string name="nomad_main_order_status_failed">не удалось отправить</string>
     <string name="nomad_main_order_status_created">создан на сервере</string>
+    <string name="nomad_main_order_title">Заказ %1$d</string>
     <string name="nomad_main_history_action">История</string>
+    <string name="nomad_main_history_subtitle">Недавние заказы</string>
     <string name="nomad_main_create_order_action">Создать заказ</string>
 
     <string name="nomad_create_order_title">Новый заказ</string>

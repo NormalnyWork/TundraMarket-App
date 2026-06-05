@@ -42,6 +42,9 @@ class NomadMainComponent(
         data object Empty : CurrentOrderState
         data class Order(
             val id: Int,
+            val tradingStationName: String,
+            val latitude: Float,
+            val longitude: Float,
             val syncState: SyncState,
         ) : CurrentOrderState
     }
@@ -59,6 +62,9 @@ class NomadMainComponent(
         return this?.let { order ->
             CurrentOrderState.Order(
                 id = order.id,
+                tradingStationName = order.tradingStation.name,
+                latitude = order.location.latitude,
+                longitude = order.location.longitude,
                 syncState = order.networkStatus.toSyncState(),
             )
         } ?: CurrentOrderState.Empty

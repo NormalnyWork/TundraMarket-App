@@ -73,12 +73,12 @@ class NomadCreateOrderComponent(
         childFactory = ::child,
     )
 
+    private val backCallback = BackCallback(isEnabled = childPages.value.selectedIndex > 0) {
+        goBack()
+    }
+
     init {
-        backHandler.register(
-            BackCallback {
-                goBack()
-            }
-        )
+        backHandler.register(backCallback)
     }
 
     fun onBackClicked() {
@@ -96,7 +96,7 @@ class NomadCreateOrderComponent(
         }
 
         if (pages.selectedIndex < pages.items.lastIndex) {
-            navigation.select(pages.selectedIndex + 1)
+            selectPage(pages.selectedIndex + 1)
         }
     }
 
@@ -159,7 +159,7 @@ class NomadCreateOrderComponent(
             return
         }
 
-        navigation.select(index)
+        selectPage(index)
     }
 
     fun canProceedFromLocation(): Boolean {
@@ -169,10 +169,15 @@ class NomadCreateOrderComponent(
     private fun goBack() {
         val pages = childPages.value
         if (pages.selectedIndex > 0) {
-            navigation.select(pages.selectedIndex - 1)
+            selectPage(pages.selectedIndex - 1)
         } else {
             onBack.invoke()
         }
+    }
+
+    private fun selectPage(index: Int) {
+        navigation.select(index)
+        backCallback.isEnabled = index > 0
     }
 
     private fun canProceedFromTradingStation(): Boolean {
