@@ -41,6 +41,7 @@ import com.normalnywork.tundramarket.ui.kit.icons.TMIcons
 import com.normalnywork.tundramarket.ui.kit.style.LocalTMColors
 import com.normalnywork.tundramarket.ui.kit.style.LocalTMTypography
 import com.normalnywork.tundramarket.ui.kit.style.TMShapes
+import com.normalnywork.tundramarket.ui.tools.toDisplayCoordinate
 import com.normalnywork.tundramarket.utils.TMConst
 import kotlin.math.roundToInt
 
@@ -180,11 +181,11 @@ private fun TradingStationCard(
                 ) {
                     StationMeta(
                         icon = TMIcons.LatitudeFilled,
-                        text = item.tradingStation.location.latitude.toDisplayCoordinate('N'),
+                        text = item.tradingStation.location.latitude.toDisplayCoordinate(),
                     )
                     StationMeta(
                         icon = TMIcons.LongitudeFilled,
-                        text = item.tradingStation.location.longitude.toDisplayCoordinate('E'),
+                        text = item.tradingStation.location.longitude.toDisplayCoordinate(),
                     )
                 }
             }
@@ -253,12 +254,4 @@ private fun TradingStationDistance.distanceText(): String {
     return distanceKm?.roundToInt()?.let {
         stringResource(R.string.nomad_create_order_trading_station_distance_km, it)
     } ?: stringResource(R.string.nomad_create_order_trading_station_distance_unknown)
-}
-
-private fun Float.toDisplayCoordinate(hemisphere: Char): String {
-    val degrees = toInt()
-    val minutesFloat = (this - degrees) * 60
-    val minutes = minutesFloat.toInt()
-    val seconds = ((minutesFloat - minutes) * 60).roundToInt()
-    return "$degrees° $minutes' $seconds\" $hemisphere"
 }

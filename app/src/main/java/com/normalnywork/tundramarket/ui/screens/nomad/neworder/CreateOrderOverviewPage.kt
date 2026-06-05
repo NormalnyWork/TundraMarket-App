@@ -32,7 +32,7 @@ import com.normalnywork.tundramarket.ui.kit.icons.TMIcons
 import com.normalnywork.tundramarket.ui.kit.style.LocalTMColors
 import com.normalnywork.tundramarket.ui.kit.style.LocalTMTypography
 import com.normalnywork.tundramarket.ui.kit.style.TMShapes
-import kotlin.math.abs
+import com.normalnywork.tundramarket.ui.tools.toDisplayCoordinate
 import kotlin.math.roundToInt
 
 @Composable
@@ -54,17 +54,11 @@ fun OverviewPageContent(
         ) {
             CoordinateRow(
                 icon = TMIcons.Latitude,
-                text = location?.latitude.toDisplayCoordinate(
-                    positiveHemisphere = 'N',
-                    negativeHemisphere = 'S',
-                ),
+                text = location?.latitude.toDisplayCoordinate(),
             )
             CoordinateRow(
                 icon = TMIcons.Longitude,
-                text = location?.longitude.toDisplayCoordinate(
-                    positiveHemisphere = 'E',
-                    negativeHemisphere = 'W',
-                ),
+                text = location?.longitude.toDisplayCoordinate(),
             )
         }
         OverviewSection(
@@ -216,20 +210,4 @@ private fun Float?.distanceText(): String {
     return this?.roundToInt()?.let {
         stringResource(R.string.nomad_create_order_trading_station_distance_km, it)
     } ?: stringResource(R.string.nomad_create_order_trading_station_distance_unknown)
-}
-
-private fun Float?.toDisplayCoordinate(
-    positiveHemisphere: Char,
-    negativeHemisphere: Char,
-): String {
-    if (this == null) return ""
-
-    val absolute = abs(this)
-    val degrees = absolute.toInt()
-    val minutesFloat = (absolute - degrees) * 60
-    val minutes = minutesFloat.toInt()
-    val seconds = ((minutesFloat - minutes) * 60).roundToInt()
-    val hemisphere = if (this >= 0f) positiveHemisphere else negativeHemisphere
-
-    return "$degrees° $minutes' $seconds\" $hemisphere"
 }
