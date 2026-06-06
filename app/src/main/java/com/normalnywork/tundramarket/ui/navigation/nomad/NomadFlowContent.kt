@@ -15,7 +15,7 @@ import com.arkivanov.decompose.extensions.compose.experimental.stack.animation.P
 import com.arkivanov.decompose.extensions.compose.experimental.stack.animation.stackAnimation
 import com.arkivanov.decompose.extensions.compose.stack.animation.predictiveback.androidPredictiveBackAnimatableV2
 import com.normalnywork.tundramarket.ui.navigation.android13NavigationTransition
-import com.normalnywork.tundramarket.ui.screens.nomad.NomadHistoryComponent
+import com.normalnywork.tundramarket.ui.screens.nomad.NomadHistoryContent
 import com.normalnywork.tundramarket.ui.screens.nomad.NomadMainContent
 import com.normalnywork.tundramarket.ui.screens.nomad.NomadOrderDetailsComponent
 import com.normalnywork.tundramarket.ui.screens.nomad.neworder.NomadCreateOrderContent
@@ -45,24 +45,6 @@ fun NomadFlowContent(
             is NomadFlowComponent.Child.History -> NomadHistoryContent(instance.component)
             is NomadFlowComponent.Child.OrderDetails -> NomadOrderDetailsContent(instance.component)
             is NomadFlowComponent.Child.CreateOrder -> NomadCreateOrderContent(instance.component)
-        }
-    }
-}
-
-@Composable
-private fun NomadHistoryContent(component: NomadHistoryComponent) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(text = "Nomad history")
-        Button(onClick = component::onOpenOrderDetailsClicked) {
-            Text(text = "Open history order")
-        }
-        Button(onClick = component::onBackClicked) {
-            Text(text = "Back")
         }
     }
 }

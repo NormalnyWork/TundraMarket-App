@@ -30,9 +30,10 @@ fun OrderWithDetails.toDomain() = Order(
 fun Order.toEntity(
     id: Int,
     createdAt: Long,
+    serverId: Int? = null,
 ) = OrderEntity(
     id = id,
-    serverId = null,
+    serverId = serverId,
     nomadId = nomadId,
     tradingStationId = tradingStation.id,
     location = location.toEntity(),

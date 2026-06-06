@@ -18,6 +18,6 @@ enum class ProtoOrderStatus {
 
 @Serializable
 data class ProtoOrderStatusHistory(
-    @ProtoNumber(1) val status: ProtoOrderStatus,
+    @ProtoNumber(1) val status: ProtoOrderStatus = ProtoOrderStatus.CREATED,
     @ProtoNumber(2) val time: Long,
 )

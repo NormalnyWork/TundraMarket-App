@@ -1,10 +1,15 @@
 package com.normalnywork.tundramarket.data
 
+import androidx.paging.ExperimentalPagingApi
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
 import androidx.paging.PagingData
+import androidx.paging.map
 import androidx.room.withTransaction
 import com.normalnywork.tundramarket.data.local.db.TMDatabase
 import com.normalnywork.tundramarket.data.local.db.dao.OrdersDao
 import com.normalnywork.tundramarket.data.local.db.dao.SyncOutboxDao
+import com.normalnywork.tundramarket.data.local.db.dao.TradingStationsDao
 import com.normalnywork.tundramarket.data.local.db.entities.OrderNetworkStatusEntity
 import com.normalnywork.tundramarket.data.local.db.entities.OrderStatusEntity
 import com.normalnywork.tundramarket.data.local.db.entities.OrderStatusHistoryEntity
@@ -13,6 +18,8 @@ import com.normalnywork.tundramarket.data.local.db.entities.SyncOutboxEntity
 import com.normalnywork.tundramarket.data.local.db.mappers.toDomain
 import com.normalnywork.tundramarket.data.local.db.mappers.toEntity
 import com.normalnywork.tundramarket.data.local.db.mappers.toOrderProductEntity
+import com.normalnywork.tundramarket.data.local.preferences.OrderHistorySyncStore
+import com.normalnywork.tundramarket.data.remote.source.RemoteOrdersDataSource
 import com.normalnywork.tundramarket.domain.entities.Order
 import com.normalnywork.tundramarket.domain.entities.OrderNetworkStatus
 import com.normalnywork.tundramarket.domain.entities.OrderStatus
@@ -30,6 +37,9 @@ class OrderRepositoryImpl(
     private val database: TMDatabase,
     private val ordersDao: OrdersDao,
     private val syncOutboxDao: SyncOutboxDao,
+    private val tradingStationsDao: TradingStationsDao,
+    private val remoteOrdersDataSource: RemoteOrdersDataSource,
+    private val orderHistorySyncStore: OrderHistorySyncStore,
     private val syncWorkScheduler: SyncWorkScheduler,
     private val networkStatusObserver: NetworkStatusObserver,
 ) : OrderRepository {
@@ -161,18 +171,47 @@ class OrderRepositoryImpl(
         return flowOf(PagingData.empty())
     }
 
+    @OptIn(ExperimentalPagingApi::class)
     override fun getHistoryOrders(): Flow<PagingData<Order>> {
-        return flowOf(PagingData.empty())
+        return Pager(
+            config = PagingConfig(
+                pageSize = HISTORY_PAGE_SIZE,
+                enablePlaceholders = false,
+            ),
+            remoteMediator = NomadHistoryRemoteMediator(
+                database = database,
+                ordersDao = ordersDao,
+                tradingStationsDao = tradingStationsDao,
+                remoteOrdersDataSource = remoteOrdersDataSource,
+                orderHistorySyncStore = orderHistorySyncStore,
+                networkStatusObserver = networkStatusObserver,
+                historyOrderStatuses = HISTORY_ORDER_STATUSES,
+                pageSize = HISTORY_PAGE_SIZE,
+            ),
+            pagingSourceFactory = {
+                ordersDao.getOrdersByStatusesPaged(HISTORY_ORDER_STATUSES)
+            },
+        ).flow.map { pagingData ->
+            pagingData.map { orderWithDetails -> orderWithDetails.toDomain() }
+        }
     }
 
     override suspend fun updateOrders() = Unit
 
     private companion object {
 
+        const val HISTORY_PAGE_SIZE = 20
+
         val CURRENT_ORDER_STATUSES = listOf(
             OrderStatus.Created,
             OrderStatus.Processing,
             OrderStatus.Sent,
+            OrderStatus.Completed,
+            OrderStatus.Cancelled,
+            OrderStatus.Denied,
+        ).map { OrderStatusEntity.valueOf(it.name) }
+
+        val HISTORY_ORDER_STATUSES = listOf(
             OrderStatus.Completed,
             OrderStatus.Cancelled,
             OrderStatus.Denied,

@@ -33,10 +33,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -307,9 +307,11 @@ private fun NetworkStatusIcon(type: NetworkStatusCardIcon) {
     val colors = LocalTMColors.current
 
     when (type) {
-        NetworkStatusCardIcon.Loading -> LoadingIndicator(
+        NetworkStatusCardIcon.Loading -> CircularProgressIndicator(
             modifier = Modifier.size(24.dp),
             color = colors.primary,
+            trackColor = colors.primaryVariant,
+            strokeWidth = 4.dp,
         )
         NetworkStatusCardIcon.BadConnection -> Icon(
             imageVector = TMIcons.BadConnection,

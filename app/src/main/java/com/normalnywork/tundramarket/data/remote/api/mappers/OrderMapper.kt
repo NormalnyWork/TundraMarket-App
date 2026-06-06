@@ -3,6 +3,7 @@ package com.normalnywork.tundramarket.data.remote.api.mappers
 import com.normalnywork.tundramarket.data.remote.api.proto.ChangeOrderStatusRequest
 import com.normalnywork.tundramarket.data.remote.api.proto.CheckOrderStatusResponse
 import com.normalnywork.tundramarket.data.remote.api.proto.CreateOrderRequest
+import com.normalnywork.tundramarket.data.remote.api.proto.OrderListResponse
 import com.normalnywork.tundramarket.data.remote.api.proto.ProtoOrderStatus
 import com.normalnywork.tundramarket.data.remote.api.proto.ProtoOrderStatusHistory
 import com.normalnywork.tundramarket.data.remote.api.proto.ProtoProductCount
@@ -32,6 +33,26 @@ fun OrderStatus.toChangeStatusRequest(orderId: Int) = ChangeOrderStatusRequest(
 fun CheckOrderStatusResponse.toOrderStatusUpdates() = RemoteOrdersDataSource.OrderStatusUpdates(
     orderId = orderId,
     statusHistory = statusUpdates.map { it.toDomain() },
+)
+
+fun OrderListResponse.toOrderListPage() = RemoteOrdersDataSource.OrderListPage(
+    orders = orders.map { order ->
+        RemoteOrdersDataSource.OrderListItem(
+            id = order.id,
+            nomadId = order.nomadId,
+            tradingStationId = order.tradingStationId,
+            status = order.status.toDomain(),
+            statusHistory = order.history.map { it.toDomain() },
+            comment = order.comment,
+            cart = order.card.map { productCount ->
+                RemoteOrdersDataSource.ProductCount(
+                    productId = productCount.productId,
+                    count = productCount.count,
+                )
+            },
+            location = order.location.toDomain(),
+        )
+    },
 )
 
 private fun ProtoOrderStatusHistory.toDomain() = OrderStatusHistory(

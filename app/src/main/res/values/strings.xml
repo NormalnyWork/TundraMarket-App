@@ -79,6 +79,22 @@
     <string name="nomad_main_status_history_denied">Отклонен</string>
     <string name="nomad_main_status_history_today_time">Сегодня, %1$s</string>
 
+    <string name="nomad_history_title">История заказов</string>
+    <string name="nomad_history_loading">Загрузка</string>
+    <string name="nomad_history_empty_title">Нет заказов</string>
+    <string name="nomad_history_empty_body">История заказов пуста</string>
+    <string name="nomad_history_no_internet_title">Ошибка</string>
+    <string name="nomad_history_no_internet_body">Не удалось загрузить историю заказов</string>
+    <string name="nomad_history_retry_action">Попробовать снова</string>
+    <string name="nomad_history_new_order_action">Сделать заказ</string>
+    <string name="nomad_history_order_title">Заказ %1$d</string>
+    <string name="nomad_history_products_count">%1$d товаров</string>
+    <string name="nomad_history_products_empty">Товары не указаны</string>
+    <string name="nomad_history_trading_station_unknown">Фактория не указана</string>
+    <string name="nomad_history_order_comment_empty">Без комментария</string>
+    <string name="nomad_history_order_date">Обновлен %1$s</string>
+    <string name="nomad_history_open_order_action">Подробнее</string>
+
     <string name="nomad_create_order_title">Новый заказ</string>
     <string name="nomad_create_order_location_page">Location</string>
     <string name="nomad_create_order_trading_station_page">TradingStation</string>

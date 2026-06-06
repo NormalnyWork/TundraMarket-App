@@ -2,11 +2,15 @@ package com.normalnywork.tundramarket.data.remote.source
 
 import com.normalnywork.tundramarket.data.remote.api.mappers.toChangeStatusRequest
 import com.normalnywork.tundramarket.data.remote.api.mappers.toCreateRequest
+import com.normalnywork.tundramarket.data.remote.api.mappers.toOrderListPage
 import com.normalnywork.tundramarket.data.remote.api.mappers.toOrderStatusUpdates
 import com.normalnywork.tundramarket.data.remote.api.proto.ChangeOrderStatusResponse
 import com.normalnywork.tundramarket.data.remote.api.proto.CheckOrderStatusRequest
 import com.normalnywork.tundramarket.data.remote.api.proto.CheckOrderStatusResponse
 import com.normalnywork.tundramarket.data.remote.api.proto.CreateOrderResponse
+import com.normalnywork.tundramarket.data.remote.api.proto.OrderListRequest
+import com.normalnywork.tundramarket.data.remote.api.proto.OrderListResponse
+import com.normalnywork.tundramarket.data.remote.api.proto.ProtoOrderCategory
 import com.normalnywork.tundramarket.data.remote.api.schema.Order
 import com.normalnywork.tundramarket.domain.entities.OrderStatus
 import io.ktor.client.HttpClient
@@ -63,6 +67,25 @@ class KtorRemoteOrdersDataSource(
             }
             .body<CheckOrderStatusResponse>()
             .toOrderStatusUpdates()
+    }
+
+    override suspend fun getHistoryOrders(
+        anchor: Int?,
+        pageSize: Int,
+    ): RemoteOrdersDataSource.OrderListPage {
+        return httpClient
+            .post(Order.List()) {
+                contentType(ContentType.Application.ProtoBuf)
+                setBody(
+                    OrderListRequest(
+                        anchor = anchor,
+                        pageSize = pageSize,
+                        orderCategory = ProtoOrderCategory.HISTORY,
+                    ),
+                )
+            }
+            .body<OrderListResponse>()
+            .toOrderListPage()
     }
 
     private companion object {

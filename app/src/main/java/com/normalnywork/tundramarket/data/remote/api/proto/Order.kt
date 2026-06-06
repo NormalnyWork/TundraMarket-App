@@ -13,7 +13,7 @@ data class ProtoOrder(
     @ProtoNumber(3) val tradingStationId: Int,
     @ProtoNumber(4) val status: ProtoOrderStatus,
     @ProtoNumber(5) val history: List<ProtoOrderStatusHistory> = emptyList(),
-    @ProtoNumber(6) val comment: String,
+    @ProtoNumber(6) val comment: String = "",
     @ProtoNumber(7) val card: List<ProtoProductCount> = emptyList(),
     @ProtoNumber(8) val location: ProtoLocation,
 )
@@ -63,8 +63,8 @@ data class ChangeOrderStatusResponse(
 @Serializable
 enum class ProtoOrderCategory {
     @ProtoNumber(0) NEW,
-    @ProtoNumber(0) PROCESSING,
-    @ProtoNumber(0) HISTORY,
+    @ProtoNumber(1) PROCESSING,
+    @ProtoNumber(2) HISTORY,
 }
 
 @Serializable

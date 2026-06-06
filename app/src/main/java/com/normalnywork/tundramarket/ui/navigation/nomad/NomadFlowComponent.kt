@@ -7,6 +7,7 @@ import com.arkivanov.decompose.router.stack.StackNavigation
 import com.arkivanov.decompose.router.stack.childStack
 import com.arkivanov.decompose.router.stack.pop
 import com.arkivanov.decompose.router.stack.pushNew
+import com.arkivanov.decompose.router.stack.replaceCurrent
 import com.arkivanov.decompose.value.Value
 import com.normalnywork.tundramarket.ui.screens.nomad.NomadHistoryComponent
 import com.normalnywork.tundramarket.ui.screens.nomad.NomadMainComponent
@@ -19,6 +20,7 @@ import org.koin.core.annotation.Singleton
 class NomadFlowComponent(
     componentContext: ComponentContext,
     private val nomadMainComponentFactory: NomadMainComponent.Factory,
+    private val nomadHistoryComponentFactory: NomadHistoryComponent.Factory,
     private val nomadCreateOrderComponentFactory: NomadCreateOrderComponent.Factory,
 ) : ComponentContext by componentContext {
 
@@ -43,10 +45,11 @@ class NomadFlowComponent(
             )
 
             Config.History -> Child.History(
-                component = NomadHistoryComponent(
+                component = nomadHistoryComponentFactory(
                     componentContext = componentContext,
                     onBack = navigation::pop,
                     onOpenOrderDetails = { orderId -> navigation.pushNew(Config.OrderDetails(orderId)) },
+                    onOpenNewOrderFlow = { navigation.replaceCurrent(Config.CreateOrder) }
                 ),
             )
 
@@ -95,12 +98,14 @@ class NomadFlowComponent(
     @Singleton
     class Factory(
         private val nomadMainComponentFactory: NomadMainComponent.Factory,
+        private val nomadHistoryComponentFactory: NomadHistoryComponent.Factory,
         private val nomadCreateOrderComponentFactory: NomadCreateOrderComponent.Factory,
     ) {
 
         operator fun invoke(componentContext: ComponentContext) = NomadFlowComponent(
             componentContext = componentContext,
             nomadMainComponentFactory = nomadMainComponentFactory,
+            nomadHistoryComponentFactory = nomadHistoryComponentFactory,
             nomadCreateOrderComponentFactory = nomadCreateOrderComponentFactory,
         )
     }

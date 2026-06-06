@@ -18,4 +18,8 @@ class Order {
     @Serializable
     @Resource("check-status")
     class CheckStatus(val parent: Order = Order())
+
+    @Serializable
+    @Resource("list")
+    class List(val parent: Order = Order())
 }

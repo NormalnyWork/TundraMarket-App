@@ -54,6 +54,7 @@ paging-compose = { module = "androidx.paging:paging-compose", version.ref = "pag
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
+room-paging = { module = "androidx.room:room-paging", version.ref = "room" }
 
 datastore = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 kotlinx-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinxSerialization" }
@@ -65,7 +66,7 @@ ktor = ["ktor-client-core", "ktor-logging", "ktor-okhttp", "ktor-resources", "kt
 koin = ["koin-compose", "koin-android", "koin-annotations"]
 compose = ["compose-ui", "compose-material3", "compose-ui-tooling-preview"]
 paging = ["paging-common", "paging-compose"]
-room = ["room-runtime", "room-ktx"]
+room = ["room-runtime", "room-ktx", "room-paging"]
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
