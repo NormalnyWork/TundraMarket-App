@@ -46,6 +46,28 @@ interface OrdersDao {
     @Query("SELECT * FROM $DB_ORDER_TABLE_NAME WHERE $DB_ORDER_COL_ID = :localOrderId")
     suspend fun getOrderByLocalId(localOrderId: Int): OrderWithDetails?
 
+    @Transaction
+    @Query(
+        """
+        SELECT * FROM $DB_ORDER_TABLE_NAME
+        WHERE $DB_ORDER_COL_ID = :orderId OR $DB_ORDER_COL_SERVER_ID = :orderId
+        LIMIT 1
+        """,
+    )
+    suspend fun getOrderByLocalOrServerId(orderId: Int): OrderWithDetails?
+
+    @Query(
+        """
+        UPDATE $DB_ORDER_TABLE_NAME
+        SET $DB_ORDER_COL_STATUS = :status
+        WHERE $DB_ORDER_COL_ID = :localOrderId
+        """,
+    )
+    suspend fun updateStatus(
+        localOrderId: Int,
+        status: OrderStatusEntity,
+    )
+
     @Query(
         """
         UPDATE $DB_ORDER_TABLE_NAME

@@ -6,6 +6,7 @@ import com.normalnywork.tundramarket.data.local.db.TMDatabase
 import com.normalnywork.tundramarket.data.local.db.dao.OrdersDao
 import com.normalnywork.tundramarket.data.local.db.dao.SyncOutboxDao
 import com.normalnywork.tundramarket.data.local.db.entities.OrderStatusEntity
+import com.normalnywork.tundramarket.data.local.db.entities.OrderStatusHistoryEntity
 import com.normalnywork.tundramarket.data.local.db.entities.SyncOperationTypeEntity
 import com.normalnywork.tundramarket.data.local.db.entities.SyncOutboxEntity
 import com.normalnywork.tundramarket.data.local.db.mappers.toDomain
@@ -73,7 +74,25 @@ class OrderRepositoryImpl(
     override suspend fun updateCurrentOrderStatus() = Unit
 
     override suspend fun changeOrderStatus(order: Order) {
-        TODO("Order status changes will be implemented with the sync processor")
+        val localOrder = ordersDao.getOrderByLocalOrServerId(order.id) ?: return
+        val localOrderId = localOrder.order.id
+        val status = OrderStatusEntity.valueOf(order.status.name)
+
+        database.withTransaction {
+            ordersDao.updateStatus(
+                localOrderId = localOrderId,
+                status = status,
+            )
+            ordersDao.insertStatusHistory(
+                listOf(
+                    OrderStatusHistoryEntity(
+                        orderId = localOrderId,
+                        status = status,
+                        time = System.currentTimeMillis(),
+                    ),
+                ),
+            )
+        }
     }
 
     override fun getProcessingOrders(): Flow<PagingData<Order>> {
@@ -96,6 +115,9 @@ class OrderRepositoryImpl(
             OrderStatus.Created,
             OrderStatus.Processing,
             OrderStatus.Sent,
+            OrderStatus.Completed,
+            OrderStatus.Cancelled,
+            OrderStatus.Denied,
         ).map { OrderStatusEntity.valueOf(it.name) }
     }
 }
