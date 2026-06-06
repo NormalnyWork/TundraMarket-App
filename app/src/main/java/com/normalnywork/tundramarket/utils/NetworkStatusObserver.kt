@@ -13,11 +13,15 @@ import org.koin.core.annotation.Singleton
 @Singleton
 class NetworkStatusObserver(private val context: Context) {
 
+    fun isConnected(): Boolean {
+        return context.getSystemService(ConnectivityManager::class.java).isConnected()
+    }
+
     fun observe(): Flow<Boolean> = callbackFlow {
         val connectivityManager = context.getSystemService(ConnectivityManager::class.java)
 
         fun sendCurrentStatus() {
-            trySend(connectivityManager.isConnected())
+            trySend(isConnected())
         }
 
         val callback = object : ConnectivityManager.NetworkCallback() {

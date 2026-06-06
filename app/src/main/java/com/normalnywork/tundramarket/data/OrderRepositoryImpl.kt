@@ -5,6 +5,7 @@ import androidx.room.withTransaction
 import com.normalnywork.tundramarket.data.local.db.TMDatabase
 import com.normalnywork.tundramarket.data.local.db.dao.OrdersDao
 import com.normalnywork.tundramarket.data.local.db.dao.SyncOutboxDao
+import com.normalnywork.tundramarket.data.local.db.entities.OrderNetworkStatusEntity
 import com.normalnywork.tundramarket.data.local.db.entities.OrderStatusEntity
 import com.normalnywork.tundramarket.data.local.db.entities.OrderStatusHistoryEntity
 import com.normalnywork.tundramarket.data.local.db.entities.SyncOperationTypeEntity
@@ -17,6 +18,7 @@ import com.normalnywork.tundramarket.domain.entities.OrderNetworkStatus
 import com.normalnywork.tundramarket.domain.entities.OrderStatus
 import com.normalnywork.tundramarket.domain.repositories.OrderRepository
 import com.normalnywork.tundramarket.sync.SyncWorkScheduler
+import com.normalnywork.tundramarket.utils.NetworkStatusObserver
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -29,6 +31,7 @@ class OrderRepositoryImpl(
     private val ordersDao: OrdersDao,
     private val syncOutboxDao: SyncOutboxDao,
     private val syncWorkScheduler: SyncWorkScheduler,
+    private val networkStatusObserver: NetworkStatusObserver,
 ) : OrderRepository {
 
     override fun getCurrentOrder(): Flow<Order?> {
@@ -42,7 +45,11 @@ class OrderRepositoryImpl(
         database.withTransaction {
             val localOrder = order.copy(
                 id = 0,
-                networkStatus = OrderNetworkStatus.Enqueued,
+                networkStatus = if (networkStatusObserver.isConnected()) {
+                    OrderNetworkStatus.Loading
+                } else {
+                    OrderNetworkStatus.Failed
+                },
             )
             val localOrderId = ordersDao.insertOrder(
                 localOrder.toEntity(
@@ -71,27 +78,78 @@ class OrderRepositoryImpl(
         syncWorkScheduler.schedule()
     }
 
-    override suspend fun updateCurrentOrderStatus() = Unit
+    override suspend fun updateCurrentOrderStatus() {
+        syncWorkScheduler.schedule(
+            replace = true,
+            syncCurrentOrderStatus = true,
+        )
+    }
 
     override suspend fun changeOrderStatus(order: Order) {
         val localOrder = ordersDao.getOrderByLocalOrServerId(order.id) ?: return
         val localOrderId = localOrder.order.id
         val status = OrderStatusEntity.valueOf(order.status.name)
+        val now = System.currentTimeMillis()
+        var shouldScheduleSync = true
 
         database.withTransaction {
+            if (localOrder.order.serverId == null && status == OrderStatusEntity.Cancelled) {
+                ordersDao.updateStatus(
+                    localOrderId = localOrderId,
+                    status = status,
+                )
+                ordersDao.updateNetworkStatus(
+                    localOrderId = localOrderId,
+                    networkStatus = null,
+                )
+                ordersDao.insertStatusHistory(
+                    listOf(
+                        OrderStatusHistoryEntity(
+                            orderId = localOrderId,
+                            status = status,
+                            time = now,
+                        ),
+                    ),
+                )
+                syncOutboxDao.deleteByLocalEntityId(localOrderId)
+                shouldScheduleSync = false
+                return@withTransaction
+            }
+
             ordersDao.updateStatus(
                 localOrderId = localOrderId,
                 status = status,
+            )
+            ordersDao.updateNetworkStatus(
+                localOrderId = localOrderId,
+                networkStatus = if (networkStatusObserver.isConnected()) {
+                    OrderNetworkStatusEntity.Updating
+                } else {
+                    OrderNetworkStatusEntity.UpdateFailed
+                },
             )
             ordersDao.insertStatusHistory(
                 listOf(
                     OrderStatusHistoryEntity(
                         orderId = localOrderId,
                         status = status,
-                        time = System.currentTimeMillis(),
+                        time = now,
                     ),
                 ),
             )
+            syncOutboxDao.insert(
+                SyncOutboxEntity(
+                    operationType = SyncOperationTypeEntity.ChangeOrderStatus,
+                    localEntityId = localOrderId,
+                    nextAttemptAt = now,
+                    createdAt = now,
+                    idempotencyKey = UUID.randomUUID().toString(),
+                ),
+            )
+        }
+
+        if (shouldScheduleSync) {
+            syncWorkScheduler.schedule()
         }
     }
 

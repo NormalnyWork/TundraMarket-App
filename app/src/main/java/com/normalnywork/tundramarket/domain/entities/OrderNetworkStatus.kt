@@ -7,4 +7,6 @@ enum class OrderNetworkStatus {
     Failed,
     LoadingSms,
     SmsFailed,
+    Updating,
+    UpdateFailed,
 }

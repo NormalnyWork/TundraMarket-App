@@ -9,6 +9,7 @@ import com.normalnywork.tundramarket.data.local.db.entities.DB_SYNC_OUTBOX_COL_A
 import com.normalnywork.tundramarket.data.local.db.entities.DB_SYNC_OUTBOX_COL_CREATED_AT
 import com.normalnywork.tundramarket.data.local.db.entities.DB_SYNC_OUTBOX_COL_ID
 import com.normalnywork.tundramarket.data.local.db.entities.DB_SYNC_OUTBOX_COL_LAST_ERROR
+import com.normalnywork.tundramarket.data.local.db.entities.DB_SYNC_OUTBOX_COL_LOCAL_ENTITY_ID
 import com.normalnywork.tundramarket.data.local.db.entities.DB_SYNC_OUTBOX_COL_NEXT_ATTEMPT_AT
 import com.normalnywork.tundramarket.data.local.db.entities.DB_SYNC_OUTBOX_COL_STATUS
 import com.normalnywork.tundramarket.data.local.db.entities.DB_SYNC_OUTBOX_TABLE_NAME
@@ -26,7 +27,7 @@ interface SyncOutboxDao {
         SELECT * FROM $DB_SYNC_OUTBOX_TABLE_NAME
         WHERE $DB_SYNC_OUTBOX_COL_STATUS IN (:statuses)
             AND $DB_SYNC_OUTBOX_COL_NEXT_ATTEMPT_AT <= :now
-        ORDER BY $DB_SYNC_OUTBOX_COL_CREATED_AT ASC
+        ORDER BY $DB_SYNC_OUTBOX_COL_CREATED_AT ASC, $DB_SYNC_OUTBOX_COL_ID ASC
         LIMIT 1
         """,
     )
@@ -38,13 +39,34 @@ interface SyncOutboxDao {
     @Query(
         """
         SELECT * FROM $DB_SYNC_OUTBOX_TABLE_NAME
+        WHERE $DB_SYNC_OUTBOX_COL_STATUS IN (:statuses)
+            AND $DB_SYNC_OUTBOX_COL_NEXT_ATTEMPT_AT <= :now
+        ORDER BY $DB_SYNC_OUTBOX_COL_CREATED_AT ASC, $DB_SYNC_OUTBOX_COL_ID ASC
+        """,
+    )
+    suspend fun getReadyOperations(
+        now: Long,
+        statuses: List<SyncOutboxStatusEntity>,
+    ): List<SyncOutboxEntity>
+
+    @Query(
+        """
+        SELECT * FROM $DB_SYNC_OUTBOX_TABLE_NAME
         WHERE $DB_SYNC_OUTBOX_COL_STATUS = :status
-        ORDER BY $DB_SYNC_OUTBOX_COL_CREATED_AT ASC
+        ORDER BY $DB_SYNC_OUTBOX_COL_CREATED_AT ASC, $DB_SYNC_OUTBOX_COL_ID ASC
         """,
     )
     suspend fun getRunningOperations(
         status: SyncOutboxStatusEntity = SyncOutboxStatusEntity.Running,
     ): List<SyncOutboxEntity>
+
+    @Query(
+        """
+        SELECT COUNT(*) FROM $DB_SYNC_OUTBOX_TABLE_NAME
+        WHERE $DB_SYNC_OUTBOX_COL_STATUS IN (:statuses)
+        """,
+    )
+    suspend fun getOperationCount(statuses: List<SyncOutboxStatusEntity>): Int
 
     @Query(
         """
@@ -86,6 +108,14 @@ interface SyncOutboxDao {
         pendingStatus: SyncOutboxStatusEntity = SyncOutboxStatusEntity.Pending,
         runningStatus: SyncOutboxStatusEntity = SyncOutboxStatusEntity.Running,
     )
+
+    @Query(
+        """
+        DELETE FROM $DB_SYNC_OUTBOX_TABLE_NAME
+        WHERE $DB_SYNC_OUTBOX_COL_LOCAL_ENTITY_ID = :localEntityId
+        """,
+    )
+    suspend fun deleteByLocalEntityId(localEntityId: Int)
 
     @Delete
     suspend fun delete(operation: SyncOutboxEntity)

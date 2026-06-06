@@ -1,8 +1,14 @@
 package com.normalnywork.tundramarket.data.remote.source
 
+import com.normalnywork.tundramarket.data.remote.api.mappers.toChangeStatusRequest
 import com.normalnywork.tundramarket.data.remote.api.mappers.toCreateRequest
+import com.normalnywork.tundramarket.data.remote.api.mappers.toOrderStatusUpdates
+import com.normalnywork.tundramarket.data.remote.api.proto.ChangeOrderStatusResponse
+import com.normalnywork.tundramarket.data.remote.api.proto.CheckOrderStatusRequest
+import com.normalnywork.tundramarket.data.remote.api.proto.CheckOrderStatusResponse
 import com.normalnywork.tundramarket.data.remote.api.proto.CreateOrderResponse
 import com.normalnywork.tundramarket.data.remote.api.schema.Order
+import com.normalnywork.tundramarket.domain.entities.OrderStatus
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.resources.post
@@ -31,6 +37,32 @@ class KtorRemoteOrdersDataSource(
             .body<CreateOrderResponse>()
 
         return response.orderId
+    }
+
+    override suspend fun changeOrderStatus(
+        orderId: Int,
+        status: OrderStatus,
+        idempotencyKey: String,
+    ): Long {
+        val response = httpClient
+            .post(Order.ChangeStatus()) {
+                contentType(ContentType.Application.ProtoBuf)
+                header(IDEMPOTENCY_KEY_HEADER, idempotencyKey)
+                setBody(status.toChangeStatusRequest(orderId = orderId))
+            }
+            .body<ChangeOrderStatusResponse>()
+
+        return response.time
+    }
+
+    override suspend fun checkCurrentOrderStatus(lastUpdated: Long): RemoteOrdersDataSource.OrderStatusUpdates {
+        return httpClient
+            .post(Order.CheckStatus()) {
+                contentType(ContentType.Application.ProtoBuf)
+                setBody(CheckOrderStatusRequest(lastUpdated = lastUpdated))
+            }
+            .body<CheckOrderStatusResponse>()
+            .toOrderStatusUpdates()
     }
 
     private companion object {

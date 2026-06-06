@@ -73,13 +73,13 @@ import com.normalnywork.tundramarket.ui.kit.icons.Checkmark
 import com.normalnywork.tundramarket.ui.kit.icons.ChevronRight
 import com.normalnywork.tundramarket.ui.kit.icons.Comment
 import com.normalnywork.tundramarket.ui.kit.icons.IllustrationDroneTent
-import com.normalnywork.tundramarket.ui.kit.icons.Latitude
-import com.normalnywork.tundramarket.ui.kit.icons.Longitude
+import com.normalnywork.tundramarket.ui.kit.icons.LatitudeFilled
+import com.normalnywork.tundramarket.ui.kit.icons.LongitudeFilled
 import com.normalnywork.tundramarket.ui.kit.icons.Processing
 import com.normalnywork.tundramarket.ui.kit.icons.Products
 import com.normalnywork.tundramarket.ui.kit.icons.Rejected
 import com.normalnywork.tundramarket.ui.kit.icons.Sent
-import com.normalnywork.tundramarket.ui.kit.icons.Shop
+import com.normalnywork.tundramarket.ui.kit.icons.ShopFilled
 import com.normalnywork.tundramarket.ui.kit.icons.TMIcons
 import com.normalnywork.tundramarket.ui.kit.icons.Waiting
 import com.normalnywork.tundramarket.ui.kit.style.LocalTMColors
@@ -87,7 +87,6 @@ import com.normalnywork.tundramarket.ui.kit.style.LocalTMTypography
 import com.normalnywork.tundramarket.ui.kit.style.TMPreviewWrapperProvider
 import com.normalnywork.tundramarket.ui.kit.style.TMShapes
 import com.normalnywork.tundramarket.ui.screens.nomad.NomadMainComponent.CurrentOrderState
-import com.normalnywork.tundramarket.ui.screens.nomad.NomadMainComponent.OrderNetworkState
 import com.normalnywork.tundramarket.ui.tools.toDisplayCoordinate
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -203,7 +202,7 @@ private fun NomadMainMiddleContent(
 
 @Composable
 private fun AnimatedNetworkStatusCard(
-    networkState: OrderNetworkState?,
+    networkState: OrderNetworkStatus?,
     onCreateOrderViaSmsClick: () -> Unit,
 ) {
     var visibleNetworkState by remember { mutableStateOf(networkState) }
@@ -233,7 +232,7 @@ private fun AnimatedNetworkStatusCard(
 
 @Composable
 private fun NetworkStatusCard(
-    networkState: OrderNetworkState,
+    networkState: OrderNetworkStatus,
     onCreateOrderViaSmsClick: () -> Unit,
 ) {
     val colors = LocalTMColors.current
@@ -820,24 +819,6 @@ private fun OrderStatus.toStatusCardAction(): StatusCardAction =
     }
 
 @Composable
-private fun OrderNetworkState.toNetworkStatusCardContent(): NetworkStatusCardContent =
-    when (this) {
-        is OrderNetworkState.Create -> status.toNetworkStatusCardContent()
-        OrderNetworkState.Updating -> NetworkStatusCardContent(
-            title = stringResource(R.string.nomad_main_network_status_update_loading_title),
-            body = stringResource(R.string.nomad_main_network_status_update_loading_body),
-            iconType = NetworkStatusCardIcon.Loading,
-            action = NetworkStatusCardAction.None,
-        )
-        OrderNetworkState.UpdateFailed -> NetworkStatusCardContent(
-            title = stringResource(R.string.nomad_main_network_status_waiting_title),
-            body = stringResource(R.string.nomad_main_network_status_update_failed_body),
-            iconType = NetworkStatusCardIcon.BadConnection,
-            action = NetworkStatusCardAction.None,
-        )
-    }
-
-@Composable
 private fun OrderNetworkStatus.toNetworkStatusCardContent(): NetworkStatusCardContent =
     when (this) {
         OrderNetworkStatus.Enqueued,
@@ -868,6 +849,20 @@ private fun OrderNetworkStatus.toNetworkStatusCardContent(): NetworkStatusCardCo
             body = stringResource(R.string.nomad_main_network_status_sms_failed_body),
             iconType = NetworkStatusCardIcon.BadConnection,
             action = NetworkStatusCardAction.RetrySms,
+        )
+
+        OrderNetworkStatus.Updating -> NetworkStatusCardContent(
+            title = stringResource(R.string.nomad_main_network_status_update_loading_title),
+            body = stringResource(R.string.nomad_main_network_status_update_loading_body),
+            iconType = NetworkStatusCardIcon.Loading,
+            action = NetworkStatusCardAction.None,
+        )
+
+        OrderNetworkStatus.UpdateFailed -> NetworkStatusCardContent(
+            title = stringResource(R.string.nomad_main_network_status_waiting_title),
+            body = stringResource(R.string.nomad_main_network_status_update_failed_body),
+            iconType = NetworkStatusCardIcon.BadConnection,
+            action = NetworkStatusCardAction.None,
         )
     }
 
@@ -1117,16 +1112,16 @@ private fun CurrentOrderOverviewCard(order: CurrentOrderState.Order) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             OrderOverviewInfo(
-                icon = TMIcons.Shop,
+                icon = TMIcons.ShopFilled,
                 text = order.sourceOrder.tradingStation.name,
                 modifier = Modifier.weight(1f, fill = false),
             )
             OrderOverviewInfo(
-                icon = TMIcons.Latitude,
+                icon = TMIcons.LatitudeFilled,
                 text = order.sourceOrder.location.latitude.toDisplayCoordinate(),
             )
             OrderOverviewInfo(
-                icon = TMIcons.Longitude,
+                icon = TMIcons.LongitudeFilled,
                 text = order.sourceOrder.location.longitude.toDisplayCoordinate(),
             )
         }

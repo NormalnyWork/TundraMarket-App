@@ -43,6 +43,17 @@ interface OrdersDao {
     fun getLatestOrderByStatuses(statuses: List<OrderStatusEntity>): Flow<OrderWithDetails?>
 
     @Transaction
+    @Query(
+        """
+        SELECT * FROM $DB_ORDER_TABLE_NAME
+        WHERE $DB_ORDER_COL_STATUS IN (:statuses)
+        ORDER BY $DB_ORDER_COL_CREATED_AT DESC
+        LIMIT 1
+        """,
+    )
+    suspend fun getLatestOrderByStatusesOnce(statuses: List<OrderStatusEntity>): OrderWithDetails?
+
+    @Transaction
     @Query("SELECT * FROM $DB_ORDER_TABLE_NAME WHERE $DB_ORDER_COL_ID = :localOrderId")
     suspend fun getOrderByLocalId(localOrderId: Int): OrderWithDetails?
 

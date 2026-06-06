@@ -5,11 +5,14 @@ import com.normalnywork.tundramarket.data.local.db.TMDatabase
 import com.normalnywork.tundramarket.data.local.db.dao.OrdersDao
 import com.normalnywork.tundramarket.data.local.db.dao.SyncOutboxDao
 import com.normalnywork.tundramarket.data.local.db.entities.OrderNetworkStatusEntity
+import com.normalnywork.tundramarket.data.local.db.entities.OrderStatusEntity
+import com.normalnywork.tundramarket.data.local.db.entities.OrderStatusHistoryEntity
 import com.normalnywork.tundramarket.data.local.db.entities.SyncOperationTypeEntity
 import com.normalnywork.tundramarket.data.local.db.entities.SyncOutboxEntity
 import com.normalnywork.tundramarket.data.local.db.entities.SyncOutboxStatusEntity
 import com.normalnywork.tundramarket.data.local.db.mappers.toDomain
 import com.normalnywork.tundramarket.data.remote.source.RemoteOrdersDataSource
+import com.normalnywork.tundramarket.utils.NetworkStatusObserver
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ResponseException
 import io.ktor.http.HttpStatusCode
@@ -24,20 +27,46 @@ class OutboxSyncProcessor(
     private val ordersDao: OrdersDao,
     private val syncOutboxDao: SyncOutboxDao,
     private val remoteOrdersDataSource: RemoteOrdersDataSource,
+    private val networkStatusObserver: NetworkStatusObserver,
 ) {
 
-    suspend fun syncPendingOperations(): SyncResult = mutex.withLock {
+    suspend fun syncPendingOperations(
+        retryWhenWaitingForNetwork: Boolean,
+        syncCurrentOrderStatus: Boolean,
+    ): SyncResult = mutex.withLock {
         resetStaleRunningOperations()
+
+        if (!retryWhenWaitingForNetwork && !networkStatusObserver.isConnected()) {
+            val hasWaitingOperations = markReadyOperationsWaitingForNetwork()
+            val hasWaitingStatusUpdate = if (!syncCurrentOrderStatus || hasWaitingOperations) {
+                false
+            } else {
+                markCurrentOrderStatusWaitingForNetwork()
+            }
+            return@withLock SyncResult(
+                shouldRetry = retryWhenWaitingForNetwork && (hasWaitingOperations || hasWaitingStatusUpdate),
+            )
+        }
 
         var shouldRetry = false
 
         while (true) {
             val operation = claimNextOperation() ?: break
-            val operationResult = syncOperation(operation)
+            val operationResult = syncOperation(
+                operation = operation,
+                retryWhenWaitingForNetwork = retryWhenWaitingForNetwork,
+            )
 
             if (!operationResult.success) {
                 shouldRetry = operationResult.retryWork
                 break
+            }
+        }
+
+        if (syncCurrentOrderStatus && !shouldRetry && !hasOutboxOperations()) {
+            val statusUpdateResult = syncCurrentOrderStatus(retryWhenWaitingForNetwork)
+            if (!statusUpdateResult.success) {
+                shouldRetry = statusUpdateResult.retryWork
             }
         }
 
@@ -64,19 +93,41 @@ class OutboxSyncProcessor(
         }
     }
 
-    private suspend fun syncOperation(operation: SyncOutboxEntity): OperationResult {
+    private suspend fun syncOperation(
+        operation: SyncOutboxEntity,
+        retryWhenWaitingForNetwork: Boolean,
+    ): OperationResult {
+        if (!retryWhenWaitingForNetwork && !networkStatusObserver.isConnected()) {
+            markWaitingForNetwork(operation)
+            return OperationResult(
+                success = false,
+                retryWork = retryWhenWaitingForNetwork,
+            )
+        }
+
         return when (operation.operationType) {
             SyncOperationTypeEntity.CreateOrder -> syncCreateOrder(operation)
+            SyncOperationTypeEntity.ChangeOrderStatus -> syncChangeOrderStatus(operation)
         }
     }
 
     private suspend fun syncCreateOrder(operation: SyncOutboxEntity): OperationResult {
         val order = ordersDao.getOrderByLocalId(operation.localEntityId)
             ?: return completeMissingLocalOrder(operation)
+        if (order.order.serverId == null && order.order.status == OrderStatusEntity.Cancelled) {
+            database.withTransaction {
+                ordersDao.updateNetworkStatus(
+                    localOrderId = operation.localEntityId,
+                    networkStatus = null,
+                )
+                syncOutboxDao.delete(operation)
+            }
+            return OperationResult.Success
+        }
 
         ordersDao.updateNetworkStatus(
             localOrderId = operation.localEntityId,
-            networkStatus = OrderNetworkStatusEntity.Processing,
+            networkStatus = OrderNetworkStatusEntity.Loading,
         )
 
         return runCatching {
@@ -105,6 +156,108 @@ class OutboxSyncProcessor(
         )
     }
 
+    private suspend fun syncChangeOrderStatus(operation: SyncOutboxEntity): OperationResult {
+        val order = ordersDao.getOrderByLocalId(operation.localEntityId)
+            ?: return completeMissingLocalOrder(operation)
+        val serverOrderId = order.order.serverId
+            ?: return markFailed(
+                operation = operation,
+                error = IllegalStateException("Order has not been created on server yet"),
+                retryWork = false,
+            )
+        val status = order.toDomain().status
+
+        ordersDao.updateNetworkStatus(
+            localOrderId = operation.localEntityId,
+            networkStatus = OrderNetworkStatusEntity.Updating,
+        )
+
+        return runCatching {
+            remoteOrdersDataSource.changeOrderStatus(
+                orderId = serverOrderId,
+                status = status,
+                idempotencyKey = operation.idempotencyKey,
+            )
+        }.fold(
+            onSuccess = {
+                database.withTransaction {
+                    ordersDao.updateNetworkStatus(
+                        localOrderId = operation.localEntityId,
+                        networkStatus = null,
+                    )
+                    syncOutboxDao.delete(operation)
+                }
+                OperationResult.Success
+            },
+            onFailure = { error ->
+                markFailed(
+                    operation = operation,
+                    error = error,
+                    retryWork = error.shouldRetryWork(),
+                )
+            },
+        )
+    }
+
+    private suspend fun syncCurrentOrderStatus(retryWhenWaitingForNetwork: Boolean): OperationResult {
+        val order = ordersDao.getLatestOrderByStatusesOnce(CURRENT_ORDER_STATUSES) ?: return OperationResult.Success
+        val serverOrderId = order.order.serverId ?: return OperationResult.Success
+        val localOrderId = order.order.id
+        val lastUpdated = order.statusHistory.maxOfOrNull { it.time } ?: 0L
+
+        if (!retryWhenWaitingForNetwork && !networkStatusObserver.isConnected()) {
+            markCurrentOrderStatusWaitingForNetwork(localOrderId)
+            return OperationResult(
+                success = false,
+                retryWork = retryWhenWaitingForNetwork,
+            )
+        }
+
+        ordersDao.updateNetworkStatus(
+            localOrderId = localOrderId,
+            networkStatus = OrderNetworkStatusEntity.Updating,
+        )
+
+        return runCatching {
+            remoteOrdersDataSource.checkCurrentOrderStatus(lastUpdated = lastUpdated)
+        }.fold(
+            onSuccess = { updates ->
+                val statusUpdates = updates.statusHistory.filter { it.time > lastUpdated }
+
+                database.withTransaction {
+                    if (updates.orderId == serverOrderId && statusUpdates.isNotEmpty()) {
+                        val latestStatus = statusUpdates.maxBy { it.time }.status
+
+                        ordersDao.updateStatus(
+                            localOrderId = localOrderId,
+                            status = OrderStatusEntity.valueOf(latestStatus.name),
+                        )
+                        ordersDao.insertStatusHistory(
+                            statusUpdates.map { update ->
+                                OrderStatusHistoryEntity(
+                                    orderId = localOrderId,
+                                    status = OrderStatusEntity.valueOf(update.status.name),
+                                    time = update.time,
+                                )
+                            },
+                        )
+                    }
+                    ordersDao.updateNetworkStatus(
+                        localOrderId = localOrderId,
+                        networkStatus = null,
+                    )
+                }
+                OperationResult.Success
+            },
+            onFailure = { error ->
+                markCurrentOrderStatusFailed(
+                    localOrderId = localOrderId,
+                    retryWork = error.shouldRetryWork(),
+                )
+            },
+        )
+    }
+
     private suspend fun completeMissingLocalOrder(operation: SyncOutboxEntity): OperationResult {
         syncOutboxDao.delete(operation)
         return OperationResult.Success
@@ -116,12 +269,93 @@ class OutboxSyncProcessor(
                 when (operation.operationType) {
                     SyncOperationTypeEntity.CreateOrder -> ordersDao.updateNetworkStatus(
                         localOrderId = operation.localEntityId,
-                        networkStatus = OrderNetworkStatusEntity.Enqueued,
+                        networkStatus = OrderNetworkStatusEntity.Loading,
+                    )
+                    SyncOperationTypeEntity.ChangeOrderStatus -> ordersDao.updateNetworkStatus(
+                        localOrderId = operation.localEntityId,
+                        networkStatus = OrderNetworkStatusEntity.Updating,
                     )
                 }
             }
             syncOutboxDao.resetRunningOperations()
         }
+    }
+
+    private suspend fun hasOutboxOperations(): Boolean {
+        return syncOutboxDao.getOperationCount(OUTBOX_STATUSES) > 0
+    }
+
+    private suspend fun markReadyOperationsWaitingForNetwork(): Boolean {
+        val now = System.currentTimeMillis()
+
+        return database.withTransaction {
+            val operations = syncOutboxDao.getReadyOperations(
+                now = now,
+                statuses = READY_STATUSES,
+            )
+
+            operations.forEach { operation ->
+                updateOrderWaitingForNetwork(operation)
+            }
+
+            operations.isNotEmpty()
+        }
+    }
+
+    private suspend fun markCurrentOrderStatusWaitingForNetwork(): Boolean {
+        return database.withTransaction {
+            val order = ordersDao.getLatestOrderByStatusesOnce(CURRENT_ORDER_STATUSES)
+            val localOrderId = order?.order?.id
+
+            if (localOrderId != null && order.order.serverId != null) {
+                markCurrentOrderStatusWaitingForNetwork(localOrderId)
+                true
+            } else {
+                false
+            }
+        }
+    }
+
+    private suspend fun markCurrentOrderStatusWaitingForNetwork(localOrderId: Int) {
+        ordersDao.updateNetworkStatus(
+            localOrderId = localOrderId,
+            networkStatus = OrderNetworkStatusEntity.UpdateFailed,
+        )
+    }
+
+    private suspend fun markWaitingForNetwork(operation: SyncOutboxEntity) {
+        database.withTransaction {
+            updateOrderWaitingForNetwork(operation)
+            syncOutboxDao.updateStatus(
+                operationId = operation.id,
+                status = SyncOutboxStatusEntity.Pending,
+            )
+        }
+    }
+
+    private suspend fun updateOrderWaitingForNetwork(operation: SyncOutboxEntity) {
+        ordersDao.updateNetworkStatus(
+            localOrderId = operation.localEntityId,
+            networkStatus = when (operation.operationType) {
+                SyncOperationTypeEntity.CreateOrder -> OrderNetworkStatusEntity.Failed
+                SyncOperationTypeEntity.ChangeOrderStatus -> OrderNetworkStatusEntity.UpdateFailed
+            },
+        )
+    }
+
+    private suspend fun markCurrentOrderStatusFailed(
+        localOrderId: Int,
+        retryWork: Boolean,
+    ): OperationResult {
+        ordersDao.updateNetworkStatus(
+            localOrderId = localOrderId,
+            networkStatus = OrderNetworkStatusEntity.UpdateFailed,
+        )
+
+        return OperationResult(
+            success = false,
+            retryWork = retryWork,
+        )
     }
 
     private suspend fun markFailed(
@@ -132,7 +366,10 @@ class OutboxSyncProcessor(
         database.withTransaction {
             ordersDao.updateNetworkStatus(
                 localOrderId = operation.localEntityId,
-                networkStatus = OrderNetworkStatusEntity.Failed,
+                networkStatus = when (operation.operationType) {
+                    SyncOperationTypeEntity.CreateOrder -> OrderNetworkStatusEntity.Failed
+                    SyncOperationTypeEntity.ChangeOrderStatus -> OrderNetworkStatusEntity.UpdateFailed
+                },
             )
             syncOutboxDao.markFailed(
                 operationId = operation.id,
@@ -181,6 +418,21 @@ class OutboxSyncProcessor(
         val READY_STATUSES = listOf(
             SyncOutboxStatusEntity.Pending,
             SyncOutboxStatusEntity.Failed,
+        )
+
+        val OUTBOX_STATUSES = listOf(
+            SyncOutboxStatusEntity.Pending,
+            SyncOutboxStatusEntity.Running,
+            SyncOutboxStatusEntity.Failed,
+        )
+
+        val CURRENT_ORDER_STATUSES = listOf(
+            OrderStatusEntity.Created,
+            OrderStatusEntity.Processing,
+            OrderStatusEntity.Sent,
+            OrderStatusEntity.Completed,
+            OrderStatusEntity.Cancelled,
+            OrderStatusEntity.Denied,
         )
 
         val mutex = Mutex()
