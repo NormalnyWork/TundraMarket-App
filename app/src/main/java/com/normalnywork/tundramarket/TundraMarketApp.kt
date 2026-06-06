@@ -27,13 +27,16 @@ class TundraMarketApp : Application() {
         val koin = GlobalContext.get()
         val syncWorkScheduler = koin.get<SyncWorkScheduler>()
 
-        syncWorkScheduler.schedule()
+        syncWorkScheduler.schedule(syncCurrentOrderStatus = true)
         applicationScope.launch {
             koin.get<NetworkStatusObserver>()
                 .observe()
                 .filter { isConnected -> isConnected }
                 .collect {
-                    syncWorkScheduler.schedule(replace = true)
+                    syncWorkScheduler.schedule(
+                        replace = true,
+                        syncCurrentOrderStatus = true,
+                    )
                 }
         }
     }

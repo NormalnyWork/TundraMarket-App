@@ -200,7 +200,7 @@ class OutboxSyncProcessor(
     }
 
     private suspend fun syncCurrentOrderStatus(retryWhenWaitingForNetwork: Boolean): OperationResult {
-        val order = ordersDao.getLatestOrderByStatusesOnce(CURRENT_ORDER_STATUSES) ?: return OperationResult.Success
+        val order = ordersDao.getLatestOrderByStatusesOnce(ACTIVE_ORDER_STATUSES) ?: return OperationResult.Success
         val serverOrderId = order.order.serverId ?: return OperationResult.Success
         val localOrderId = order.order.id
         val lastUpdated = order.statusHistory.maxOfOrNull { it.time } ?: 0L
@@ -304,7 +304,7 @@ class OutboxSyncProcessor(
 
     private suspend fun markCurrentOrderStatusWaitingForNetwork(): Boolean {
         return database.withTransaction {
-            val order = ordersDao.getLatestOrderByStatusesOnce(CURRENT_ORDER_STATUSES)
+            val order = ordersDao.getLatestOrderByStatusesOnce(ACTIVE_ORDER_STATUSES)
             val localOrderId = order?.order?.id
 
             if (localOrderId != null && order.order.serverId != null) {
@@ -426,13 +426,10 @@ class OutboxSyncProcessor(
             SyncOutboxStatusEntity.Failed,
         )
 
-        val CURRENT_ORDER_STATUSES = listOf(
+        val ACTIVE_ORDER_STATUSES = listOf(
             OrderStatusEntity.Created,
             OrderStatusEntity.Processing,
             OrderStatusEntity.Sent,
-            OrderStatusEntity.Completed,
-            OrderStatusEntity.Cancelled,
-            OrderStatusEntity.Denied,
         )
 
         val mutex = Mutex()
