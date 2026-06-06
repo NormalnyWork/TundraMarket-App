@@ -2,6 +2,7 @@ package com.normalnywork.tundramarket.ui.screens.nomad
 
 import com.arkivanov.decompose.ComponentContext
 import com.arkivanov.essenty.instancekeeper.getOrCreate
+import com.normalnywork.tundramarket.domain.entities.OrderNetworkStatus
 import com.normalnywork.tundramarket.domain.entities.OrderStatus
 import com.normalnywork.tundramarket.domain.usecases.orders.ChangeOrderStatusUseCase
 import com.normalnywork.tundramarket.domain.usecases.orders.CreateOrderUseCase
@@ -10,7 +11,7 @@ import com.normalnywork.tundramarket.ui.tools.BaseStateHolder
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.koin.core.annotation.Singleton
@@ -28,7 +29,9 @@ class NomadMainComponent(
     private val stateHolder = instanceKeeper.getOrCreate { StateHolder() }
 
     val currentOrderState: StateFlow<CurrentOrderState> = getCurrentOrderUseCase()
-        .map { order -> order.toCurrentOrderState() }
+        .combine(stateHolder.orderStatusNetworkState) { order, orderStatusNetworkState ->
+            order.toCurrentOrderState(orderStatusNetworkState)
+        }
         .stateIn(
             scope = stateHolder.scope,
             started = SharingStarted.Lazily,
@@ -65,16 +68,24 @@ class NomadMainComponent(
         if (order.sourceOrder.status != OrderStatus.Created || stateHolder.isChangingOrderStatus.value) return
 
         stateHolder.isChangingOrderStatus.value = true
+        stateHolder.orderStatusNetworkState.value = OrderNetworkState.Updating
         stateHolder.scope.launch {
             try {
                 changeOrderStatusUseCase(
                     order = order.sourceOrder,
                     status = OrderStatus.Cancelled,
                 )
+                stateHolder.orderStatusNetworkState.value = null
+            } catch (_: Throwable) {
+                stateHolder.orderStatusNetworkState.value = OrderNetworkState.UpdateFailed
             } finally {
                 stateHolder.isChangingOrderStatus.value = false
             }
         }
+    }
+
+    fun onCreateOrderViaSmsClicked(order: CurrentOrderState.Order) {
+        // SMS transport is handled outside this screen; keep this action explicit for the UI state.
     }
 
     sealed interface CurrentOrderState {
@@ -84,6 +95,7 @@ class NomadMainComponent(
             val id: Int,
             val sourceOrder: DomainOrder,
             val products: List<ProductItem>,
+            val networkState: OrderNetworkState?,
         ) : CurrentOrderState
     }
 
@@ -96,9 +108,18 @@ class NomadMainComponent(
 
         val isRepeatingOrder = MutableStateFlow(false)
         val isChangingOrderStatus = MutableStateFlow(false)
+        val orderStatusNetworkState = MutableStateFlow<OrderNetworkState?>(null)
     }
 
-    private fun DomainOrder?.toCurrentOrderState(): CurrentOrderState {
+    sealed interface OrderNetworkState {
+        data class Create(val status: OrderNetworkStatus) : OrderNetworkState
+
+        data object Updating : OrderNetworkState
+
+        data object UpdateFailed : OrderNetworkState
+    }
+
+    private fun DomainOrder?.toCurrentOrderState(orderStatusNetworkState: OrderNetworkState?): CurrentOrderState {
         return this?.let { order ->
             CurrentOrderState.Order(
                 id = order.id,
@@ -109,6 +130,7 @@ class NomadMainComponent(
                         quantity = quantity,
                     )
                 },
+                networkState = orderStatusNetworkState ?: order.networkStatus?.let(OrderNetworkState::Create),
             )
         } ?: CurrentOrderState.Empty
     }

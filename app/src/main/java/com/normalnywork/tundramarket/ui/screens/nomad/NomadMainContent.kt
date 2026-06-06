@@ -6,8 +6,10 @@ import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
@@ -21,16 +23,20 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -55,12 +61,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
 import androidx.compose.ui.unit.dp
 import com.normalnywork.tundramarket.R
+import com.normalnywork.tundramarket.domain.entities.OrderNetworkStatus
 import com.normalnywork.tundramarket.domain.entities.OrderStatus
 import com.normalnywork.tundramarket.domain.entities.OrderStatusHistory
 import com.normalnywork.tundramarket.ui.kit.components.TMButtonPrimary
 import com.normalnywork.tundramarket.ui.kit.components.TMButtonSlider
 import com.normalnywork.tundramarket.ui.kit.components.TMButtonTertiary
 import com.normalnywork.tundramarket.ui.kit.components.TMCompactTopBar
+import com.normalnywork.tundramarket.ui.kit.icons.BadConnection
 import com.normalnywork.tundramarket.ui.kit.icons.Checkmark
 import com.normalnywork.tundramarket.ui.kit.icons.ChevronRight
 import com.normalnywork.tundramarket.ui.kit.icons.Comment
@@ -79,6 +87,7 @@ import com.normalnywork.tundramarket.ui.kit.style.LocalTMTypography
 import com.normalnywork.tundramarket.ui.kit.style.TMPreviewWrapperProvider
 import com.normalnywork.tundramarket.ui.kit.style.TMShapes
 import com.normalnywork.tundramarket.ui.screens.nomad.NomadMainComponent.CurrentOrderState
+import com.normalnywork.tundramarket.ui.screens.nomad.NomadMainComponent.OrderNetworkState
 import com.normalnywork.tundramarket.ui.tools.toDisplayCoordinate
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -94,6 +103,7 @@ fun NomadMainContent(component: NomadMainComponent) {
         onCreateOrderClick = component::onCreateOrderClicked,
         onRepeatOrderClick = component::onRepeatOrderClicked,
         onCancelOrderClick = component::onCancelOrderClicked,
+        onCreateOrderViaSmsClick = component::onCreateOrderViaSmsClicked,
     )
 }
 
@@ -104,6 +114,7 @@ private fun NomadMainContent(
     onCreateOrderClick: () -> Unit,
     onRepeatOrderClick: (CurrentOrderState.Order) -> Unit,
     onCancelOrderClick: (CurrentOrderState.Order) -> Unit,
+    onCreateOrderViaSmsClick: (CurrentOrderState.Order) -> Unit,
 ) {
     val colors = LocalTMColors.current
     val scrollState = rememberScrollState()
@@ -126,6 +137,7 @@ private fun NomadMainContent(
                 onCreateOrderClick = onCreateOrderClick,
                 onRepeatOrderClick = onRepeatOrderClick,
                 onCancelOrderClick = onCancelOrderClick,
+                onCreateOrderViaSmsClick = onCreateOrderViaSmsClick,
                 modifier = Modifier.padding(paddings),
             )
         },
@@ -150,6 +162,7 @@ private fun NomadMainMiddleContent(
     onCreateOrderClick: () -> Unit,
     onRepeatOrderClick: (CurrentOrderState.Order) -> Unit,
     onCancelOrderClick: (CurrentOrderState.Order) -> Unit,
+    onCreateOrderViaSmsClick: (CurrentOrderState.Order) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -161,7 +174,7 @@ private fun NomadMainMiddleContent(
         verticalArrangement = if (currentOrderState is CurrentOrderState.Empty) {
             Arrangement.Center
         } else {
-            Arrangement.spacedBy(16.dp)
+            Arrangement.Top
         },
     ) {
         when (currentOrderState) {
@@ -170,15 +183,141 @@ private fun NomadMainMiddleContent(
             )
 
             is CurrentOrderState.Order -> {
+                AnimatedNetworkStatusCard(
+                    networkState = currentOrderState.networkState,
+                    onCreateOrderViaSmsClick = { onCreateOrderViaSmsClick(currentOrderState) },
+                )
                 OrderStatusCard(
                     order = currentOrderState,
                     onRepeatOrderClick = { onRepeatOrderClick(currentOrderState) },
                     onCancelOrderClick = { onCancelOrderClick(currentOrderState) },
                 )
+                Spacer(modifier = Modifier.height(16.dp))
                 OrderStatusHistoryCard(history = currentOrderState.sourceOrder.statusHistory)
+                Spacer(modifier = Modifier.height(16.dp))
                 OrderDetailsCard(order = currentOrderState)
             }
         }
+    }
+}
+
+@Composable
+private fun AnimatedNetworkStatusCard(
+    networkState: OrderNetworkState?,
+    onCreateOrderViaSmsClick: () -> Unit,
+) {
+    var visibleNetworkState by remember { mutableStateOf(networkState) }
+
+    LaunchedEffect(networkState) {
+        if (networkState != null) {
+            visibleNetworkState = networkState
+        }
+    }
+
+    AnimatedVisibility(
+        visible = networkState != null,
+        enter = fadeIn() + expandVertically() + slideInVertically { it / 2 },
+        exit = fadeOut() + shrinkVertically() + slideOutVertically { -it / 2 },
+    ) {
+        visibleNetworkState?.let { state ->
+            Column {
+                NetworkStatusCard(
+                    networkState = state,
+                    onCreateOrderViaSmsClick = onCreateOrderViaSmsClick,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun NetworkStatusCard(
+    networkState: OrderNetworkState,
+    onCreateOrderViaSmsClick: () -> Unit,
+) {
+    val colors = LocalTMColors.current
+    val typography = LocalTMTypography.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                color = colors.secondaryVariant,
+                shape = TMShapes.Medium,
+            )
+            .border(
+                width = 1.dp,
+                color = colors.secondary,
+                shape = TMShapes.Medium,
+            )
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+    ) {
+        AnimatedContent(
+            targetState = networkState.toNetworkStatusCardContent(),
+            transitionSpec = {
+                (fadeIn() + slideInVertically { it / 3 })
+                    .togetherWith(fadeOut() + slideOutVertically { -it / 3 })
+                    .using(SizeTransform(clip = false))
+            },
+            label = "NomadOrderNetworkStatus",
+        ) { content ->
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    NetworkStatusIcon(type = content.iconType)
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            text = content.title.uppercase(),
+                            style = typography.label,
+                            color = colors.textPrimary,
+                        )
+                        Text(
+                            text = content.body,
+                            style = typography.body,
+                            color = colors.textSecondary,
+                        )
+                    }
+                }
+
+                if (content.action != NetworkStatusCardAction.None) {
+                    TMButtonSlider(
+                        text = stringResource(
+                            when (content.action) {
+                                NetworkStatusCardAction.SendSms ->
+                                    R.string.nomad_main_network_status_send_sms_action
+                                NetworkStatusCardAction.RetrySms ->
+                                    R.string.nomad_main_network_status_retry_action
+                            }
+                        ),
+                        onClick = onCreateOrderViaSmsClick,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun NetworkStatusIcon(type: NetworkStatusCardIcon) {
+    val colors = LocalTMColors.current
+
+    when (type) {
+        NetworkStatusCardIcon.Loading -> LoadingIndicator(
+            modifier = Modifier.size(24.dp),
+            color = colors.primary,
+        )
+        NetworkStatusCardIcon.BadConnection -> Icon(
+            imageVector = TMIcons.BadConnection,
+            contentDescription = null,
+            tint = colors.primary,
+            modifier = Modifier.size(24.dp),
+        )
     }
 }
 
@@ -681,6 +820,58 @@ private fun OrderStatus.toStatusCardAction(): StatusCardAction =
     }
 
 @Composable
+private fun OrderNetworkState.toNetworkStatusCardContent(): NetworkStatusCardContent =
+    when (this) {
+        is OrderNetworkState.Create -> status.toNetworkStatusCardContent()
+        OrderNetworkState.Updating -> NetworkStatusCardContent(
+            title = stringResource(R.string.nomad_main_network_status_update_loading_title),
+            body = stringResource(R.string.nomad_main_network_status_update_loading_body),
+            iconType = NetworkStatusCardIcon.Loading,
+            action = NetworkStatusCardAction.None,
+        )
+        OrderNetworkState.UpdateFailed -> NetworkStatusCardContent(
+            title = stringResource(R.string.nomad_main_network_status_waiting_title),
+            body = stringResource(R.string.nomad_main_network_status_update_failed_body),
+            iconType = NetworkStatusCardIcon.BadConnection,
+            action = NetworkStatusCardAction.None,
+        )
+    }
+
+@Composable
+private fun OrderNetworkStatus.toNetworkStatusCardContent(): NetworkStatusCardContent =
+    when (this) {
+        OrderNetworkStatus.Enqueued,
+        OrderNetworkStatus.Processing,
+        OrderNetworkStatus.Loading -> NetworkStatusCardContent(
+            title = stringResource(R.string.nomad_main_network_status_loading_title),
+            body = stringResource(R.string.nomad_main_network_status_create_loading_body),
+            iconType = NetworkStatusCardIcon.Loading,
+            action = NetworkStatusCardAction.None,
+        )
+
+        OrderNetworkStatus.Failed -> NetworkStatusCardContent(
+            title = stringResource(R.string.nomad_main_network_status_waiting_title),
+            body = stringResource(R.string.nomad_main_network_status_create_failed_body),
+            iconType = NetworkStatusCardIcon.BadConnection,
+            action = NetworkStatusCardAction.SendSms,
+        )
+
+        OrderNetworkStatus.LoadingSms -> NetworkStatusCardContent(
+            title = stringResource(R.string.nomad_main_network_status_loading_title),
+            body = stringResource(R.string.nomad_main_network_status_sms_loading_body),
+            iconType = NetworkStatusCardIcon.Loading,
+            action = NetworkStatusCardAction.None,
+        )
+
+        OrderNetworkStatus.SmsFailed -> NetworkStatusCardContent(
+            title = stringResource(R.string.nomad_main_network_status_waiting_title),
+            body = stringResource(R.string.nomad_main_network_status_sms_failed_body),
+            iconType = NetworkStatusCardIcon.BadConnection,
+            action = NetworkStatusCardAction.RetrySms,
+        )
+    }
+
+@Composable
 private fun OrderStatus.toStatusHistoryIconColors(isLatest: Boolean): StatusHistoryIconColors {
     val colors = LocalTMColors.current
 
@@ -727,6 +918,13 @@ private data class StatusCardContent(
     val icon: ImageVector,
 )
 
+private data class NetworkStatusCardContent(
+    val title: String,
+    val body: String,
+    val iconType: NetworkStatusCardIcon,
+    val action: NetworkStatusCardAction,
+)
+
 private data class StatusHistoryIconColors(
     val backgroundColor: Color,
     val contentColor: Color,
@@ -737,6 +935,19 @@ private enum class StatusCardAction {
     None,
     Cancel,
     Denied,
+}
+
+private enum class NetworkStatusCardIcon {
+
+    Loading,
+    BadConnection,
+}
+
+private enum class NetworkStatusCardAction {
+
+    None,
+    SendSms,
+    RetrySms,
 }
 
 private object StatusHistoryTokens {
@@ -960,5 +1171,6 @@ private fun NomadMainContentPreview() {
         onCreateOrderClick = {},
         onRepeatOrderClick = {},
         onCancelOrderClick = {},
+        onCreateOrderViaSmsClick = {},
     )
 }

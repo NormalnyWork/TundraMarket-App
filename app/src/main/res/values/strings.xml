@@ -45,6 +45,17 @@
     <string name="nomad_main_make_order_action">Сделать заказ</string>
     <string name="nomad_main_repeat_order_action">Повторить заказ</string>
     <string name="nomad_main_cancel_order_action">Отменить</string>
+    <string name="nomad_main_network_status_loading_title">Загрузка</string>
+    <string name="nomad_main_network_status_waiting_title">Ожидание сети</string>
+    <string name="nomad_main_network_status_create_loading_body">Отправляем заказ</string>
+    <string name="nomad_main_network_status_create_failed_body">Заказ не поступил на факторию</string>
+    <string name="nomad_main_network_status_sms_loading_body">Отправляем заказ по SMS</string>
+    <string name="nomad_main_network_status_sms_failed_body">Не удалось отправить заказ по SMS</string>
+    <string name="nomad_main_network_status_update_loading_title">Обновление</string>
+    <string name="nomad_main_network_status_update_loading_body">Актуализируем статус заказа</string>
+    <string name="nomad_main_network_status_update_failed_body">Статус заказа может быть устаревшим</string>
+    <string name="nomad_main_network_status_send_sms_action">Отправить по SMS</string>
+    <string name="nomad_main_network_status_retry_action">Повторить</string>
     <string name="nomad_main_status_card_title">Статус</string>
     <string name="nomad_main_status_created_title">Создан</string>
     <string name="nomad_main_status_created_body">Фактория еще не приступила к обработке заказа</string>
