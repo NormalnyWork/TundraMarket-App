@@ -1,5 +1,8 @@
 package com.normalnywork.tundramarket.domain.entities
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Order(
     val id: Int,
     val nomadId: Int,

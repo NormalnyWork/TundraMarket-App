@@ -3,9 +3,7 @@ package com.normalnywork.tundramarket.ui.screens.nomad
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -13,7 +11,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,7 +18,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,7 +27,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -43,18 +38,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
@@ -63,7 +53,7 @@ import androidx.compose.ui.unit.dp
 import com.normalnywork.tundramarket.R
 import com.normalnywork.tundramarket.domain.entities.OrderNetworkStatus
 import com.normalnywork.tundramarket.domain.entities.OrderStatus
-import com.normalnywork.tundramarket.domain.entities.OrderStatusHistory
+import com.normalnywork.tundramarket.domain.entities.isTerminal
 import com.normalnywork.tundramarket.ui.kit.components.TMButtonPrimary
 import com.normalnywork.tundramarket.ui.kit.components.TMButtonSlider
 import com.normalnywork.tundramarket.ui.kit.components.TMButtonTertiary
@@ -71,14 +61,11 @@ import com.normalnywork.tundramarket.ui.kit.components.TMCompactTopBar
 import com.normalnywork.tundramarket.ui.kit.icons.BadConnection
 import com.normalnywork.tundramarket.ui.kit.icons.Checkmark
 import com.normalnywork.tundramarket.ui.kit.icons.ChevronRight
-import com.normalnywork.tundramarket.ui.kit.icons.Comment
 import com.normalnywork.tundramarket.ui.kit.icons.IllustrationDroneTent
 import com.normalnywork.tundramarket.ui.kit.icons.LatitudeFilled
 import com.normalnywork.tundramarket.ui.kit.icons.LongitudeFilled
 import com.normalnywork.tundramarket.ui.kit.icons.Processing
-import com.normalnywork.tundramarket.ui.kit.icons.Products
 import com.normalnywork.tundramarket.ui.kit.icons.Rejected
-import com.normalnywork.tundramarket.ui.kit.icons.Sent
 import com.normalnywork.tundramarket.ui.kit.icons.ShopFilled
 import com.normalnywork.tundramarket.ui.kit.icons.TMIcons
 import com.normalnywork.tundramarket.ui.kit.icons.Waiting
@@ -87,10 +74,9 @@ import com.normalnywork.tundramarket.ui.kit.style.LocalTMTypography
 import com.normalnywork.tundramarket.ui.kit.style.TMPreviewWrapperProvider
 import com.normalnywork.tundramarket.ui.kit.style.TMShapes
 import com.normalnywork.tundramarket.ui.screens.nomad.NomadMainComponent.CurrentOrderState
+import com.normalnywork.tundramarket.ui.shared.OrderDetailsCard
+import com.normalnywork.tundramarket.ui.shared.OrderStatusHistoryCard
 import com.normalnywork.tundramarket.ui.tools.toDisplayCoordinate
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
 
 @Composable
 fun NomadMainContent(component: NomadMainComponent) {
@@ -196,7 +182,10 @@ private fun NomadMainMiddleContent(
                 Spacer(modifier = Modifier.height(16.dp))
                 OrderStatusHistoryCard(history = currentOrderState.sourceOrder.statusHistory)
                 Spacer(modifier = Modifier.height(16.dp))
-                OrderDetailsCard(order = currentOrderState)
+                OrderDetailsCard(
+                    cart = currentOrderState.sourceOrder.cart,
+                    comment = currentOrderState.sourceOrder.comment,
+                )
             }
         }
     }
@@ -482,200 +471,6 @@ private fun OrderStatusReasonCard(text: String) {
 }
 
 @Composable
-private fun OrderStatusHistoryCard(history: List<OrderStatusHistory>) {
-    val colors = LocalTMColors.current
-    val typography = LocalTMTypography.current
-    val sortedHistory = history.sortedBy { it.time }
-    var animateHistoryChanges by remember { mutableStateOf(false) }
-
-    LaunchedEffect(sortedHistory.isNotEmpty()) {
-        if (sortedHistory.isNotEmpty()) {
-            animateHistoryChanges = true
-        }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                color = colors.background,
-                shape = TMShapes.Medium,
-            )
-            .border(
-                width = 1.dp,
-                color = colors.stroke,
-                shape = TMShapes.Medium,
-            )
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.nomad_main_status_history_title).uppercase(),
-            style = typography.title,
-            color = colors.textPrimary,
-        )
-        Column(modifier = if (animateHistoryChanges) Modifier.animateContentSize() else Modifier) {
-            sortedHistory.forEachIndexed { index, item ->
-                val isLatest = index == sortedHistory.lastIndex
-
-                key(item.status) {
-                    AnimatedOrderStatusHistoryItem(
-                        item = item,
-                        isLatest = isLatest,
-                        animateEnter = animateHistoryChanges,
-                    )
-                }
-
-                if (!isLatest) {
-                    key(item.status, "divider") {
-                        AnimatedOrderStatusHistoryDivider(animateEnter = animateHistoryChanges)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AnimatedOrderStatusHistoryItem(
-    item: OrderStatusHistory,
-    isLatest: Boolean,
-    animateEnter: Boolean,
-) {
-    val visibleState = remember(item.status) {
-        MutableTransitionState(!animateEnter).apply {
-            targetState = true
-        }
-    }
-
-    AnimatedVisibility(
-        visibleState = visibleState,
-        enter = fadeIn() + slideInVertically { it / 2 },
-        exit = fadeOut() + slideOutVertically { it / 2 },
-    ) {
-        OrderStatusHistoryItem(
-            item = item,
-            isLatest = isLatest,
-        )
-    }
-}
-
-@Composable
-private fun OrderStatusHistoryItem(
-    item: OrderStatusHistory,
-    isLatest: Boolean,
-) {
-    val colors = LocalTMColors.current
-    val typography = LocalTMTypography.current
-    val iconColors = item.status.toStatusHistoryIconColors(isLatest = isLatest)
-    val iconBackgroundColor by animateColorAsState(
-        targetValue = iconColors.backgroundColor,
-        label = "StatusHistoryIconBackgroundColor",
-    )
-    val iconContentColor by animateColorAsState(
-        targetValue = iconColors.contentColor,
-        label = "StatusHistoryIconContentColor",
-    )
-    val statusTime = item.time.toStatusHistoryTime()
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(StatusHistoryTokens.IconContainerSize)
-                .background(
-                    color = iconBackgroundColor,
-                    shape = CircleShape,
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = item.status.toStatusHistoryIcon(),
-                contentDescription = null,
-                tint = iconContentColor,
-                modifier = Modifier.size(StatusHistoryTokens.IconSize),
-            )
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(
-                text = item.status.toStatusHistoryTitle(),
-                style = typography.subtitle,
-                color = colors.textPrimary,
-            )
-            AnimatedContent(
-                targetState = statusTime,
-                transitionSpec = {
-                    fadeIn() + slideInVertically { -it / 2 } togetherWith
-                        fadeOut() + slideOutVertically { it / 2 }
-                },
-                label = "StatusHistoryTime",
-            ) { animatedStatusTime ->
-                Text(
-                    text = animatedStatusTime,
-                    style = typography.bodySmall,
-                    color = colors.textSecondary,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun AnimatedOrderStatusHistoryDivider(animateEnter: Boolean) {
-    val visibleState = remember {
-        MutableTransitionState(!animateEnter).apply {
-            targetState = true
-        }
-    }
-
-    AnimatedVisibility(
-        visibleState = visibleState,
-        enter = fadeIn() + slideInVertically { it / 2 },
-        exit = fadeOut() + slideOutVertically { it / 2 },
-    ) {
-        OrderStatusHistoryDivider()
-    }
-}
-
-@Composable
-private fun OrderStatusHistoryDivider() {
-    val color = LocalTMColors.current.primaryVariant
-
-    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        Box(
-            modifier = Modifier.size(
-                width = StatusHistoryTokens.IconContainerSize,
-                height = StatusHistoryTokens.DividerHeight,
-            ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Canvas(
-                modifier = Modifier.size(
-                    width = StatusHistoryTokens.DividerWidth,
-                    height = StatusHistoryTokens.DividerHeight,
-                ),
-            ) {
-                drawLine(
-                    color = color,
-                    start = Offset(x = size.width / 2f, y = 0f),
-                    end = Offset(x = size.width / 2f, y = size.height),
-                    strokeWidth = size.width,
-                    pathEffect = PathEffect.dashPathEffect(
-                        intervals = floatArrayOf(
-                            StatusHistoryTokens.DashLength.toPx(),
-                            StatusHistoryTokens.DashGap.toPx(),
-                        ),
-                    ),
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun NomadMainBottomCard(
     showDivider: Boolean,
     showCreateOrderButton: Boolean,
@@ -791,27 +586,6 @@ private fun OrderStatus.toStatusCardContent(): StatusCardContent =
         )
     }
 
-@Composable
-private fun OrderStatus.toStatusHistoryTitle(): String =
-    when (this) {
-        OrderStatus.Created -> stringResource(R.string.nomad_main_status_history_created)
-        OrderStatus.Processing -> stringResource(R.string.nomad_main_status_history_processing)
-        OrderStatus.Sent -> stringResource(R.string.nomad_main_status_history_sent)
-        OrderStatus.Completed -> stringResource(R.string.nomad_main_status_history_completed)
-        OrderStatus.Cancelled -> stringResource(R.string.nomad_main_status_history_cancelled)
-        OrderStatus.Denied -> stringResource(R.string.nomad_main_status_history_denied)
-    }
-
-private fun OrderStatus.toStatusHistoryIcon(): ImageVector =
-    when (this) {
-        OrderStatus.Created -> TMIcons.Waiting
-        OrderStatus.Processing -> TMIcons.Processing
-        OrderStatus.Sent -> TMIcons.Sent
-        OrderStatus.Completed -> TMIcons.Checkmark
-        OrderStatus.Cancelled,
-        OrderStatus.Denied -> TMIcons.Rejected
-    }
-
 private fun OrderStatus.toStatusCardAction(): StatusCardAction =
     when (this) {
         OrderStatus.Created -> StatusCardAction.Cancel
@@ -870,47 +644,6 @@ private fun OrderNetworkStatus.toNetworkStatusCardContent(): NetworkStatusCardCo
         )
     }
 
-@Composable
-private fun OrderStatus.toStatusHistoryIconColors(isLatest: Boolean): StatusHistoryIconColors {
-    val colors = LocalTMColors.current
-
-    return if (isLatest) {
-        StatusHistoryIconColors(
-            backgroundColor = colors.primary,
-            contentColor = colors.onPrimary,
-        )
-    } else {
-        StatusHistoryIconColors(
-            backgroundColor = colors.primaryVariant,
-            contentColor = colors.primary,
-        )
-    }
-}
-
-@Composable
-private fun Long.toStatusHistoryTime(): String {
-    val calendar = Calendar.getInstance()
-    val itemCalendar = Calendar.getInstance().apply {
-        timeInMillis = this@toStatusHistoryTime
-    }
-    val isToday = calendar.get(Calendar.YEAR) == itemCalendar.get(Calendar.YEAR) &&
-        calendar.get(Calendar.DAY_OF_YEAR) == itemCalendar.get(Calendar.DAY_OF_YEAR)
-    val pattern = if (isToday) TODAY_TIME_PATTERN else DATE_TIME_PATTERN
-    val formattedTime = SimpleDateFormat(pattern, LocalLocale.current.platformLocale)
-        .format(Date(this))
-
-    return if (isToday) {
-        stringResource(R.string.nomad_main_status_history_today_time, formattedTime)
-    } else {
-        formattedTime
-    }
-}
-
-private val OrderStatus.isTerminal: Boolean
-    get() = this == OrderStatus.Completed ||
-        this == OrderStatus.Denied ||
-        this == OrderStatus.Cancelled
-
 private data class StatusCardContent(
     val title: String,
     val body: String,
@@ -922,11 +655,6 @@ private data class NetworkStatusCardContent(
     val body: String,
     val iconType: NetworkStatusCardIcon,
     val action: NetworkStatusCardAction,
-)
-
-private data class StatusHistoryIconColors(
-    val backgroundColor: Color,
-    val contentColor: Color,
 )
 
 private enum class StatusCardAction {
@@ -947,143 +675,6 @@ private enum class NetworkStatusCardAction {
     None,
     SendSms,
     RetrySms,
-}
-
-private object StatusHistoryTokens {
-
-    val IconContainerSize = 40.dp
-    val IconSize = 24.dp
-    val DividerHeight = 12.dp
-    val DividerWidth = 2.dp
-    val DashLength = 2.dp
-    val DashGap = 2.dp
-}
-
-private const val TODAY_TIME_PATTERN = "H:mm"
-private const val DATE_TIME_PATTERN = "dd.MM.yyyy, H:mm"
-
-@Composable
-private fun OrderDetailsCard(order: CurrentOrderState.Order) {
-    val colors = LocalTMColors.current
-    val typography = LocalTMTypography.current
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(
-                width = 1.dp,
-                color = colors.stroke,
-                shape = TMShapes.Medium,
-            )
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.nomad_main_order_details_title).uppercase(),
-            style = typography.title,
-            color = colors.textPrimary,
-        )
-        OrderDetailsSection(
-            title = stringResource(R.string.nomad_create_order_overview_products_section),
-            icon = TMIcons.Products,
-        ) {
-            OrderDetailsSurface {
-                order.products.forEach { product ->
-                    ProductRow(product = product)
-                }
-            }
-        }
-        OrderDetailsSection(
-            title = stringResource(R.string.nomad_create_order_overview_comment_section),
-            icon = TMIcons.Comment,
-        ) {
-            val comment = order.sourceOrder.comment
-
-            OrderDetailsSurface {
-                OrderDetailsText(
-                    text = comment.ifEmpty { stringResource(R.string.nomad_create_order_overview_no_comment) },
-                    colorSecondary = comment.isEmpty(),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun OrderDetailsSection(
-    title: String,
-    icon: ImageVector,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        val colors = LocalTMColors.current
-        val typography = LocalTMTypography.current
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = colors.primary,
-                modifier = Modifier.size(20.dp),
-            )
-            Text(
-                text = title,
-                style = typography.subtitle,
-                color = colors.textPrimary,
-            )
-        }
-        content()
-    }
-}
-
-@Composable
-private fun OrderDetailsSurface(content: @Composable ColumnScope.() -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(TMShapes.Medium)
-            .background(LocalTMColors.current.backgroundCard)
-            .padding(vertical = 12.dp, horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        content = content,
-    )
-}
-
-@Composable
-private fun ProductRow(product: NomadMainComponent.ProductItem) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        OrderDetailsText(
-            text = product.name,
-            modifier = Modifier.weight(1f),
-        )
-        OrderDetailsText(
-            text = stringResource(R.string.nomad_create_order_overview_product_quantity, product.quantity),
-            colorSecondary = true,
-        )
-    }
-}
-
-@Composable
-private fun OrderDetailsText(
-    text: String,
-    modifier: Modifier = Modifier,
-    colorSecondary: Boolean = false,
-) {
-    val colors = LocalTMColors.current
-
-    Text(
-        text = text,
-        style = LocalTMTypography.current.body,
-        color = if (colorSecondary) colors.textSecondary else colors.textPrimary,
-        modifier = modifier,
-    )
 }
 
 @Composable

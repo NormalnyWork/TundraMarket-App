@@ -2,17 +2,12 @@ package com.normalnywork.tundramarket.ui.screens.nomad
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
@@ -27,12 +22,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
 import androidx.compose.ui.unit.dp
@@ -49,21 +41,11 @@ import com.normalnywork.tundramarket.domain.entities.TradingStation
 import com.normalnywork.tundramarket.ui.kit.components.TMButtonPrimary
 import com.normalnywork.tundramarket.ui.kit.components.TMTopBar
 import com.normalnywork.tundramarket.ui.kit.icons.BadConnection
-import com.normalnywork.tundramarket.ui.kit.icons.Checkmark
-import com.normalnywork.tundramarket.ui.kit.icons.ChevronRight
-import com.normalnywork.tundramarket.ui.kit.icons.LatitudeFilled
-import com.normalnywork.tundramarket.ui.kit.icons.LongitudeFilled
-import com.normalnywork.tundramarket.ui.kit.icons.Processing
-import com.normalnywork.tundramarket.ui.kit.icons.Rejected
-import com.normalnywork.tundramarket.ui.kit.icons.Sent
-import com.normalnywork.tundramarket.ui.kit.icons.ShopFilled
 import com.normalnywork.tundramarket.ui.kit.icons.TMIcons
-import com.normalnywork.tundramarket.ui.kit.icons.Waiting
 import com.normalnywork.tundramarket.ui.kit.style.LocalTMColors
 import com.normalnywork.tundramarket.ui.kit.style.LocalTMTypography
 import com.normalnywork.tundramarket.ui.kit.style.TMPreviewWrapperProvider
-import com.normalnywork.tundramarket.ui.kit.style.TMShapes
-import com.normalnywork.tundramarket.ui.tools.toDisplayCoordinate
+import com.normalnywork.tundramarket.ui.shared.HistoryOrderCard
 
 @Composable
 fun NomadHistoryContent(component: NomadHistoryComponent) {
@@ -300,206 +282,6 @@ private fun HistoryAppendError(onRetryClick: () -> Unit) {
 }
 
 @Composable
-private fun HistoryOrderCard(
-    order: Order,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val colors = LocalTMColors.current
-    val typography = LocalTMTypography.current
-
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(TMShapes.Medium)
-            .background(colors.background)
-            .border(
-                width = 1.dp,
-                color = colors.stroke,
-                shape = TMShapes.Medium,
-            )
-            .clickable(
-                role = Role.Button,
-                onClick = onClick,
-            )
-            .padding(
-                top = 12.dp,
-                start = 16.dp,
-                end = 16.dp,
-                bottom = 8.dp,
-            ),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(R.string.nomad_history_order_title, order.id).uppercase(),
-                    style = typography.label,
-                    color = colors.textPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
-                HistoryStatusBadge(status = order.status)
-            }
-            HistoryOrderLocationRow(order = order)
-        }
-
-        HistoryOrderProducts(cart = order.cart)
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(40.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = stringResource(R.string.nomad_history_open_order_action),
-                style = typography.subtitle,
-                color = colors.primary,
-            )
-            Icon(
-                imageVector = TMIcons.ChevronRight,
-                contentDescription = null,
-                tint = colors.primary,
-                modifier = Modifier.size(24.dp),
-            )
-        }
-    }
-}
-
-@Composable
-private fun HistoryStatusBadge(status: OrderStatus) {
-    val colors = LocalTMColors.current
-
-    Row(
-        modifier = Modifier
-            .clip(TMShapes.Medium)
-            .background(colors.backgroundCard)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            imageVector = status.toHistoryIcon(),
-            contentDescription = null,
-            tint = colors.primary,
-            modifier = Modifier.size(20.dp),
-        )
-        Text(
-            text = status.toHistoryTitle().uppercase(),
-            style = LocalTMTypography.current.captionLabel,
-            color = colors.textPrimary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
-@Composable
-private fun HistoryOrderLocationRow(order: Order) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        HistoryOrderInfoItem(
-            icon = TMIcons.ShopFilled,
-            text = order.tradingStation.name.ifBlank {
-                stringResource(R.string.nomad_history_trading_station_unknown)
-            },
-            modifier = Modifier.weight(1f, fill = false),
-        )
-        HistoryOrderInfoItem(
-            icon = TMIcons.LatitudeFilled,
-            text = order.location.latitude.toDisplayCoordinate(),
-        )
-        HistoryOrderInfoItem(
-            icon = TMIcons.LongitudeFilled,
-            text = order.location.longitude.toDisplayCoordinate(),
-        )
-    }
-}
-
-@Composable
-private fun HistoryOrderInfoItem(
-    icon: ImageVector,
-    text: String,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = LocalTMColors.current.textSecondary,
-            modifier = Modifier.size(14.dp),
-        )
-        Text(
-            text = text,
-            style = LocalTMTypography.current.bodySmall,
-            color = LocalTMColors.current.textSecondary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
-@Composable
-private fun HistoryOrderProducts(cart: List<Pair<Product, Int>>) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(TMShapes.Medium)
-            .background(LocalTMColors.current.backgroundCard)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        cart.forEach { (product, quantity) ->
-            HistoryOrderProductRow(
-                product = product,
-                quantity = quantity,
-            )
-        }
-    }
-}
-
-@Composable
-private fun HistoryOrderProductRow(
-    product: Product,
-    quantity: Int,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = product.name,
-            style = LocalTMTypography.current.body,
-            color = LocalTMColors.current.textPrimary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
-        Text(
-            text = stringResource(R.string.nomad_create_order_overview_product_quantity, quantity),
-            style = LocalTMTypography.current.bodySmall,
-            color = LocalTMColors.current.textSecondary,
-            maxLines = 1,
-        )
-    }
-}
-
-@Composable
 private fun NomadHistoryPreviewContent(
     state: HistoryPreviewState,
     onBackClick: () -> Unit = {},
@@ -555,29 +337,6 @@ private fun NomadHistoryPreviewContent(
             }
         }
     }
-}
-
-@Composable
-private fun OrderStatus.toHistoryTitle(): String {
-    return when (this) {
-        OrderStatus.Created -> stringResource(R.string.nomad_main_status_history_created)
-        OrderStatus.Processing -> stringResource(R.string.nomad_main_status_history_processing)
-        OrderStatus.Sent -> stringResource(R.string.nomad_main_status_history_sent)
-        OrderStatus.Completed -> stringResource(R.string.nomad_main_status_history_completed)
-        OrderStatus.Cancelled -> stringResource(R.string.nomad_main_status_history_cancelled)
-        OrderStatus.Denied -> stringResource(R.string.nomad_main_status_history_denied)
-    }
-}
-
-private fun OrderStatus.toHistoryIcon() = when (this) {
-    OrderStatus.Processing -> TMIcons.Processing
-    OrderStatus.Sent -> TMIcons.Sent
-    OrderStatus.Completed -> TMIcons.Checkmark
-    OrderStatus.Cancelled,
-    OrderStatus.Denied,
-    -> TMIcons.Rejected
-
-    else -> TMIcons.Waiting
 }
 
 private fun LazyPagingItems<Order>.toScreenState(): HistoryScreenState {

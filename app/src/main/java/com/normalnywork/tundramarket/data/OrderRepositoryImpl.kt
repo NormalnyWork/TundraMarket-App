@@ -274,6 +274,9 @@ class OrderRepositoryImpl(
         ).map { OrderStatusEntity.valueOf(it.name) }
 
         val HISTORY_ORDER_STATUSES = listOf(
+            OrderStatus.Created,
+            OrderStatus.Processing,
+            OrderStatus.Sent,
             OrderStatus.Completed,
             OrderStatus.Cancelled,
             OrderStatus.Denied,

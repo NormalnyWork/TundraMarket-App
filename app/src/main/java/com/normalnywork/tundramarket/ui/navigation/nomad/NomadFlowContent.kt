@@ -1,14 +1,8 @@
 package com.normalnywork.tundramarket.ui.navigation.nomad
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.ExperimentalDecomposeApi
 import com.arkivanov.decompose.extensions.compose.experimental.stack.ChildStack
 import com.arkivanov.decompose.extensions.compose.experimental.stack.animation.PredictiveBackParams
@@ -17,7 +11,7 @@ import com.arkivanov.decompose.extensions.compose.stack.animation.predictiveback
 import com.normalnywork.tundramarket.ui.navigation.android13NavigationTransition
 import com.normalnywork.tundramarket.ui.screens.nomad.NomadHistoryContent
 import com.normalnywork.tundramarket.ui.screens.nomad.NomadMainContent
-import com.normalnywork.tundramarket.ui.screens.nomad.NomadOrderDetailsComponent
+import com.normalnywork.tundramarket.ui.screens.nomad.NomadOrderDetailsContent
 import com.normalnywork.tundramarket.ui.screens.nomad.neworder.NomadCreateOrderContent
 
 @OptIn(ExperimentalDecomposeApi::class)
@@ -45,21 +39,6 @@ fun NomadFlowContent(
             is NomadFlowComponent.Child.History -> NomadHistoryContent(instance.component)
             is NomadFlowComponent.Child.OrderDetails -> NomadOrderDetailsContent(instance.component)
             is NomadFlowComponent.Child.CreateOrder -> NomadCreateOrderContent(instance.component)
-        }
-    }
-}
-
-@Composable
-private fun NomadOrderDetailsContent(component: NomadOrderDetailsComponent) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(text = "Nomad order details: ${component.orderId}")
-        Button(onClick = component::onBackClicked) {
-            Text(text = "Back")
         }
     }
 }

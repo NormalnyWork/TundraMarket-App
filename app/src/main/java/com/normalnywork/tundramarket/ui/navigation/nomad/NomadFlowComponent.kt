@@ -7,8 +7,10 @@ import com.arkivanov.decompose.router.stack.StackNavigation
 import com.arkivanov.decompose.router.stack.childStack
 import com.arkivanov.decompose.router.stack.pop
 import com.arkivanov.decompose.router.stack.pushNew
+import com.arkivanov.decompose.router.stack.replaceAll
 import com.arkivanov.decompose.router.stack.replaceCurrent
 import com.arkivanov.decompose.value.Value
+import com.normalnywork.tundramarket.domain.entities.Order
 import com.normalnywork.tundramarket.ui.screens.nomad.NomadHistoryComponent
 import com.normalnywork.tundramarket.ui.screens.nomad.NomadMainComponent
 import com.normalnywork.tundramarket.ui.screens.nomad.NomadOrderDetailsComponent
@@ -21,6 +23,7 @@ class NomadFlowComponent(
     componentContext: ComponentContext,
     private val nomadMainComponentFactory: NomadMainComponent.Factory,
     private val nomadHistoryComponentFactory: NomadHistoryComponent.Factory,
+    private val nomadOrderDetailsComponentFactory: NomadOrderDetailsComponent.Factory,
     private val nomadCreateOrderComponentFactory: NomadCreateOrderComponent.Factory,
 ) : ComponentContext by componentContext {
 
@@ -48,16 +51,17 @@ class NomadFlowComponent(
                 component = nomadHistoryComponentFactory(
                     componentContext = componentContext,
                     onBack = navigation::pop,
-                    onOpenOrderDetails = { orderId -> navigation.pushNew(Config.OrderDetails(orderId)) },
+                    onOpenOrderDetails = { order -> navigation.pushNew(Config.OrderDetails(order)) },
                     onOpenNewOrderFlow = { navigation.replaceCurrent(Config.CreateOrder) }
                 ),
             )
 
             is Config.OrderDetails -> Child.OrderDetails(
-                component = NomadOrderDetailsComponent(
+                component = nomadOrderDetailsComponentFactory(
                     componentContext = componentContext,
-                    orderId = config.orderId,
+                    order = config.order,
                     onBack = navigation::pop,
+                    onOrderRepeated = { navigation.replaceAll(Config.Main) },
                 ),
             )
 
@@ -92,13 +96,14 @@ class NomadFlowComponent(
         data object CreateOrder : Config
 
         @Serializable
-        data class OrderDetails(val orderId: Int) : Config
+        data class OrderDetails(val order: Order) : Config
     }
 
     @Singleton
     class Factory(
         private val nomadMainComponentFactory: NomadMainComponent.Factory,
         private val nomadHistoryComponentFactory: NomadHistoryComponent.Factory,
+        private val nomadOrderDetailsComponentFactory: NomadOrderDetailsComponent.Factory,
         private val nomadCreateOrderComponentFactory: NomadCreateOrderComponent.Factory,
     ) {
 
@@ -106,6 +111,7 @@ class NomadFlowComponent(
             componentContext = componentContext,
             nomadMainComponentFactory = nomadMainComponentFactory,
             nomadHistoryComponentFactory = nomadHistoryComponentFactory,
+            nomadOrderDetailsComponentFactory = nomadOrderDetailsComponentFactory,
             nomadCreateOrderComponentFactory = nomadCreateOrderComponentFactory,
         )
     }

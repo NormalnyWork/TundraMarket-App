@@ -13,7 +13,7 @@ import org.koin.core.annotation.Singleton
 class NomadHistoryComponent(
     componentContext: ComponentContext,
     private val onBack: () -> Unit,
-    private val onOpenOrderDetails: (Int) -> Unit,
+    private val onOpenOrderDetails: (Order) -> Unit,
     private val onOpenNewOrderFlow: () -> Unit,
     private val getHistoryOrdersUseCase: GetHistoryOrdersUseCase,
 ) : ComponentContext by componentContext {
@@ -28,7 +28,7 @@ class NomadHistoryComponent(
     }
 
     fun onOpenOrderDetailsClicked(order: Order) {
-        onOpenOrderDetails.invoke(order.id)
+        onOpenOrderDetails.invoke(order)
     }
 
     fun onNewOrderClicked() {
@@ -45,7 +45,7 @@ class NomadHistoryComponent(
         operator fun invoke(
             componentContext: ComponentContext,
             onBack: () -> Unit,
-            onOpenOrderDetails: (Int) -> Unit,
+            onOpenOrderDetails: (Order) -> Unit,
             onOpenNewOrderFlow: () -> Unit,
         ) = NomadHistoryComponent(
             componentContext = componentContext,
