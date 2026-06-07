@@ -20,6 +20,8 @@ interface RemoteOrdersDataSource {
 
     suspend fun checkCurrentOrderStatus(lastUpdated: Long): OrderStatusUpdates
 
+    suspend fun getCurrentOrder(): OrderListItem?
+
     suspend fun getHistoryOrders(
         anchor: Int?,
         pageSize: Int,

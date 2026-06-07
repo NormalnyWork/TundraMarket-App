@@ -55,6 +55,7 @@ fun AuthInitializationContent(component: AuthInitializationComponent) {
     val auth by component.auth.collectAsState()
     val tradingStations by component.tradingStations.collectAsState()
     val catalog by component.catalog.collectAsState()
+    val currentOrder by component.currentOrder.collectAsState()
 
     val colors = LocalTMColors.current
 
@@ -80,6 +81,7 @@ fun AuthInitializationContent(component: AuthInitializationComponent) {
                     authStatus = auth,
                     tradingStationsStatus = tradingStations,
                     catalogStatus = catalog,
+                    currentOrderStatus = currentOrder,
                 )
             }
         },
@@ -93,6 +95,7 @@ private fun StatusCard(
     authStatus: Status,
     tradingStationsStatus: Status?,
     catalogStatus: Status?,
+    currentOrderStatus: Status?,
 ) {
     val colors = LocalTMColors.current
     val typography = LocalTMTypography.current
@@ -133,6 +136,13 @@ private fun StatusCard(
                 StatusItem(
                     title = stringResource(R.string.auth_init_step_catalog),
                     status = catalogStatus,
+                )
+            }
+            if (currentOrderStatus != null) {
+                StatusItemsDivider()
+                StatusItem(
+                    title = stringResource(R.string.auth_init_step_current_order),
+                    status = currentOrderStatus,
                 )
             }
         }

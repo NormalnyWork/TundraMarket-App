@@ -4,6 +4,8 @@ import com.normalnywork.tundramarket.data.remote.api.proto.ChangeOrderStatusRequ
 import com.normalnywork.tundramarket.data.remote.api.proto.CheckOrderStatusResponse
 import com.normalnywork.tundramarket.data.remote.api.proto.CreateOrderRequest
 import com.normalnywork.tundramarket.data.remote.api.proto.OrderListResponse
+import com.normalnywork.tundramarket.data.remote.api.proto.OrderResponse
+import com.normalnywork.tundramarket.data.remote.api.proto.ProtoOrder
 import com.normalnywork.tundramarket.data.remote.api.proto.ProtoOrderStatus
 import com.normalnywork.tundramarket.data.remote.api.proto.ProtoOrderStatusHistory
 import com.normalnywork.tundramarket.data.remote.api.proto.ProtoProductCount
@@ -35,24 +37,26 @@ fun CheckOrderStatusResponse.toOrderStatusUpdates() = RemoteOrdersDataSource.Ord
     statusHistory = statusUpdates.map { it.toDomain() },
 )
 
+fun OrderResponse.toOrderListItem() = order?.toOrderListItem()
+
 fun OrderListResponse.toOrderListPage() = RemoteOrdersDataSource.OrderListPage(
-    orders = orders.map { order ->
-        RemoteOrdersDataSource.OrderListItem(
-            id = order.id,
-            nomadId = order.nomadId,
-            tradingStationId = order.tradingStationId,
-            status = order.status.toDomain(),
-            statusHistory = order.history.map { it.toDomain() },
-            comment = order.comment,
-            cart = order.card.map { productCount ->
-                RemoteOrdersDataSource.ProductCount(
-                    productId = productCount.productId,
-                    count = productCount.count,
-                )
-            },
-            location = order.location.toDomain(),
+    orders = orders.map { it.toOrderListItem() },
+)
+
+private fun ProtoOrder.toOrderListItem() = RemoteOrdersDataSource.OrderListItem(
+    id = id,
+    nomadId = nomadId,
+    tradingStationId = tradingStationId,
+    status = status.toDomain(),
+    statusHistory = history.map { it.toDomain() },
+    comment = comment,
+    cart = card.map { productCount ->
+        RemoteOrdersDataSource.ProductCount(
+            productId = productCount.productId,
+            count = productCount.count,
         )
     },
+    location = location.toDomain(),
 )
 
 private fun ProtoOrderStatusHistory.toDomain() = OrderStatusHistory(

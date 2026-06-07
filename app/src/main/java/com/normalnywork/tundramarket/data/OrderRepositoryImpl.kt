@@ -10,7 +10,9 @@ import com.normalnywork.tundramarket.data.local.db.TMDatabase
 import com.normalnywork.tundramarket.data.local.db.dao.OrdersDao
 import com.normalnywork.tundramarket.data.local.db.dao.SyncOutboxDao
 import com.normalnywork.tundramarket.data.local.db.dao.TradingStationsDao
+import com.normalnywork.tundramarket.data.local.db.entities.OrderEntity
 import com.normalnywork.tundramarket.data.local.db.entities.OrderNetworkStatusEntity
+import com.normalnywork.tundramarket.data.local.db.entities.OrderProductEntity
 import com.normalnywork.tundramarket.data.local.db.entities.OrderStatusEntity
 import com.normalnywork.tundramarket.data.local.db.entities.OrderStatusHistoryEntity
 import com.normalnywork.tundramarket.data.local.db.entities.SyncOperationTypeEntity
@@ -47,6 +49,40 @@ class OrderRepositoryImpl(
     override fun getCurrentOrder(): Flow<Order?> {
         return ordersDao.getLatestOrderByStatuses(CURRENT_ORDER_STATUSES)
             .map { orderWithDetails -> orderWithDetails?.toDomain() }
+    }
+
+    override suspend fun initializeCurrentOrder() {
+        val remoteOrder = remoteOrdersDataSource.getCurrentOrder() ?: return
+        val tradingStation = tradingStationsDao.getTradingStationById(remoteOrder.tradingStationId)
+            ?: error("Trading station ${remoteOrder.tradingStationId} is not cached")
+
+        database.withTransaction {
+            val localOrderId = upsertRemoteOrder(
+                remoteOrder = remoteOrder,
+                tradingStationId = tradingStation.id,
+            )
+
+            ordersDao.deleteOrderProducts(localOrderId)
+            ordersDao.deleteStatusHistory(localOrderId)
+            ordersDao.insertOrderProducts(
+                remoteOrder.cart.map { productCount ->
+                    OrderProductEntity(
+                        orderId = localOrderId,
+                        productId = productCount.productId,
+                        count = productCount.count,
+                    )
+                },
+            )
+            ordersDao.insertStatusHistory(
+                remoteOrder.statusHistory.map { history ->
+                    OrderStatusHistoryEntity(
+                        orderId = localOrderId,
+                        status = OrderStatusEntity.valueOf(history.status.name),
+                        time = history.time,
+                    )
+                },
+            )
+        }
     }
 
     override suspend fun createOrder(order: Order) {
@@ -197,6 +233,32 @@ class OrderRepositoryImpl(
     }
 
     override suspend fun updateOrders() = Unit
+
+    private suspend fun upsertRemoteOrder(
+        remoteOrder: RemoteOrdersDataSource.OrderListItem,
+        tradingStationId: Int,
+    ): Int {
+        val existingOrder = ordersDao.getOrderByServerId(remoteOrder.id)?.order
+        val createdAt = remoteOrder.statusHistory.minOfOrNull { it.time } ?: System.currentTimeMillis()
+        val order = OrderEntity(
+            id = existingOrder?.id ?: 0,
+            serverId = remoteOrder.id,
+            nomadId = remoteOrder.nomadId,
+            tradingStationId = tradingStationId,
+            location = remoteOrder.location.toEntity(),
+            comment = remoteOrder.comment,
+            status = OrderStatusEntity.valueOf(remoteOrder.status.name),
+            networkStatus = null,
+            createdAt = existingOrder?.createdAt ?: createdAt,
+        )
+
+        return if (existingOrder == null) {
+            ordersDao.insertOrder(order).toInt()
+        } else {
+            ordersDao.updateOrder(order)
+            existingOrder.id
+        }
+    }
 
     private companion object {
 

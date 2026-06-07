@@ -14,4 +14,8 @@ class User {
     @Serializable
     @Resource("catalog")
     class Catalog(val parent: User = User())
+
+    @Serializable
+    @Resource("current-order")
+    class CurrentOrder(val parent: User = User())
 }

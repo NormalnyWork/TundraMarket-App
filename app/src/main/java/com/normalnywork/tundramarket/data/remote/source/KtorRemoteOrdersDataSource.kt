@@ -2,6 +2,7 @@ package com.normalnywork.tundramarket.data.remote.source
 
 import com.normalnywork.tundramarket.data.remote.api.mappers.toChangeStatusRequest
 import com.normalnywork.tundramarket.data.remote.api.mappers.toCreateRequest
+import com.normalnywork.tundramarket.data.remote.api.mappers.toOrderListItem
 import com.normalnywork.tundramarket.data.remote.api.mappers.toOrderListPage
 import com.normalnywork.tundramarket.data.remote.api.mappers.toOrderStatusUpdates
 import com.normalnywork.tundramarket.data.remote.api.proto.ChangeOrderStatusResponse
@@ -10,11 +11,14 @@ import com.normalnywork.tundramarket.data.remote.api.proto.CheckOrderStatusRespo
 import com.normalnywork.tundramarket.data.remote.api.proto.CreateOrderResponse
 import com.normalnywork.tundramarket.data.remote.api.proto.OrderListRequest
 import com.normalnywork.tundramarket.data.remote.api.proto.OrderListResponse
+import com.normalnywork.tundramarket.data.remote.api.proto.OrderResponse
 import com.normalnywork.tundramarket.data.remote.api.proto.ProtoOrderCategory
 import com.normalnywork.tundramarket.data.remote.api.schema.Order
+import com.normalnywork.tundramarket.data.remote.api.schema.User
 import com.normalnywork.tundramarket.domain.entities.OrderStatus
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.plugins.resources.get
 import io.ktor.client.plugins.resources.post
 import io.ktor.client.request.header
 import io.ktor.client.request.setBody
@@ -67,6 +71,13 @@ class KtorRemoteOrdersDataSource(
             }
             .body<CheckOrderStatusResponse>()
             .toOrderStatusUpdates()
+    }
+
+    override suspend fun getCurrentOrder(): RemoteOrdersDataSource.OrderListItem? {
+        return httpClient
+            .get(User.CurrentOrder())
+            .body<OrderResponse>()
+            .toOrderListItem()
     }
 
     override suspend fun getHistoryOrders(

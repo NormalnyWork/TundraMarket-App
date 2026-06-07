@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.CircularProgressIndicator
@@ -98,14 +99,13 @@ private fun NomadHistoryContent(
         Crossfade(
             targetState = screenState,
             label = "NomadHistoryState",
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddings),
+            modifier = Modifier.fillMaxSize(),
         ) { targetState ->
             when (targetState) {
                 HistoryScreenState.Loading -> HistoryMessageState(
                     subtitle = stringResource(R.string.nomad_history_loading),
                     loading = true,
+                    paddings = paddings,
                 )
 
                 HistoryScreenState.Empty -> HistoryMessageState(
@@ -113,6 +113,7 @@ private fun NomadHistoryContent(
                     body = stringResource(R.string.nomad_history_empty_body),
                     actionText = stringResource(R.string.nomad_history_new_order_action),
                     onActionClick = onNewOrderClick,
+                    paddings = paddings,
                 )
 
                 HistoryScreenState.NoInternet -> HistoryMessageState(
@@ -121,11 +122,13 @@ private fun NomadHistoryContent(
                     body = stringResource(R.string.nomad_history_no_internet_body),
                     actionText = stringResource(R.string.nomad_history_retry_action),
                     onActionClick = orders::retry,
+                    paddings = paddings,
                 )
 
                 HistoryScreenState.Orders -> HistoryOrdersState(
                     orders = orders,
                     onOrderClick = onOrderClick,
+                    paddings = paddings,
                 )
             }
         }
@@ -142,12 +145,14 @@ private fun HistoryMessageState(
     loading: Boolean = false,
     actionText: String? = null,
     onActionClick: (() -> Unit)? = null,
+    paddings: PaddingValues,
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .navigationBarsPadding()
-            .padding(16.dp),
+            .padding(16.dp)
+            .padding(paddings),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
     ) {
@@ -209,12 +214,13 @@ private fun HistoryMessageState(
 private fun HistoryOrdersState(
     orders: LazyPagingItems<Order>,
     onOrderClick: (Order) -> Unit,
+    paddings: PaddingValues,
 ) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .navigationBarsPadding(),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = paddings + PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items(
@@ -522,6 +528,7 @@ private fun NomadHistoryPreviewContent(
                 HistoryPreviewState.Loading -> HistoryMessageState(
                     subtitle = stringResource(R.string.nomad_history_loading),
                     loading = true,
+                    paddings = paddings,
                 )
 
                 HistoryPreviewState.Empty -> HistoryMessageState(
@@ -529,6 +536,7 @@ private fun NomadHistoryPreviewContent(
                     body = stringResource(R.string.nomad_history_empty_body),
                     actionText = stringResource(R.string.nomad_history_new_order_action),
                     onActionClick = onNewOrderClick,
+                    paddings = paddings,
                 )
 
                 HistoryPreviewState.NoInternet -> HistoryMessageState(
@@ -537,6 +545,7 @@ private fun NomadHistoryPreviewContent(
                     body = stringResource(R.string.nomad_history_no_internet_body),
                     actionText = stringResource(R.string.nomad_history_retry_action),
                     onActionClick = onRetryClick,
+                    paddings = paddings,
                 )
 
                 is HistoryPreviewState.Orders -> HistoryOrdersPreviewState(

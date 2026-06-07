@@ -10,6 +10,7 @@ interface AuthInitializationComponent {
 
     val tradingStations: StateFlow<Status?>
     val catalog: StateFlow<Status?>
+    val currentOrder: StateFlow<Status?>
 
     enum class Status {
         Queued,

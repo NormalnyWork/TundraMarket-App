@@ -4,6 +4,7 @@ import com.arkivanov.decompose.ComponentContext
 import com.arkivanov.essenty.instancekeeper.getOrCreate
 import com.normalnywork.tundramarket.domain.entities.UserRole
 import com.normalnywork.tundramarket.domain.usecases.auth.AuthorizeUserUseCase
+import com.normalnywork.tundramarket.domain.usecases.orders.InitializeCurrentOrderUseCase
 import com.normalnywork.tundramarket.domain.usecases.products.InitializeCatalogUseCase
 import com.normalnywork.tundramarket.domain.usecases.products.InitializeTradingStationsUseCase
 import com.normalnywork.tundramarket.ui.navigation.auth.AuthInitializationComponent
@@ -29,6 +30,7 @@ class ActualAuthInitializationComponent(
     private val authorizeUserUseCase: AuthorizeUserUseCase,
     private val initializeTradingStationsUseCase: InitializeTradingStationsUseCase,
     private val initializeCatalogUseCase: InitializeCatalogUseCase,
+    private val initializeCurrentOrderUseCase: InitializeCurrentOrderUseCase,
     networkStatusObserver: NetworkStatusObserver,
 ) : AuthInitializationComponent, ComponentContext by componentContext {
 
@@ -48,6 +50,7 @@ class ActualAuthInitializationComponent(
     override val auth = stateHolder.auth
     override val tradingStations = stateHolder.tradingStations
     override val catalog = stateHolder.catalog
+    override val currentOrder = stateHolder.currentOrder
 
     private suspend fun runInitialization() {
         runStep(
@@ -73,6 +76,13 @@ class ActualAuthInitializationComponent(
                 setStatus = { catalog.value = it },
             ) {
                 initializeCatalogUseCase()
+            }
+
+            runStep(
+                getStatus = { currentOrder.value },
+                setStatus = { currentOrder.value = it },
+            ) {
+                initializeCurrentOrderUseCase()
             }
         }
 
@@ -120,6 +130,7 @@ class ActualAuthInitializationComponent(
         private val authorizeUserUseCase: AuthorizeUserUseCase,
         private val initializeTradingStationsUseCase: InitializeTradingStationsUseCase,
         private val initializeCatalogUseCase: InitializeCatalogUseCase,
+        private val initializeCurrentOrderUseCase: InitializeCurrentOrderUseCase,
         private val networkStatusObserver: NetworkStatusObserver,
     ) : AuthInitializationComponent.Factory {
 
@@ -138,6 +149,7 @@ class ActualAuthInitializationComponent(
             authorizeUserUseCase = authorizeUserUseCase,
             initializeTradingStationsUseCase = initializeTradingStationsUseCase,
             initializeCatalogUseCase = initializeCatalogUseCase,
+            initializeCurrentOrderUseCase = initializeCurrentOrderUseCase,
             networkStatusObserver = networkStatusObserver,
         )
     }
@@ -155,6 +167,9 @@ class ActualAuthInitializationComponent(
         val catalog = MutableStateFlow(
             if (role == UserRole.Nomad) Status.Queued else null,
         )
+        val currentOrder = MutableStateFlow(
+            if (role == UserRole.Nomad) Status.Queued else null,
+        )
 
         val isOnline: StateFlow<Boolean> = networkStatusObserver.observe()
             .stateIn(scope, SharingStarted.Eagerly, false)
@@ -170,9 +185,11 @@ class MockAuthInitializationComponent(
     authStatus: Status = Status.Done,
     tradingStationsStatus: Status? = Status.Processing,
     catalogStatus: Status? = Status.Queued,
+    currentOrderStatus: Status? = Status.Queued,
 ) : AuthInitializationComponent {
 
     override val auth = MutableStateFlow(authStatus)
     override val tradingStations = MutableStateFlow(tradingStationsStatus)
     override val catalog = MutableStateFlow(catalogStatus)
+    override val currentOrder = MutableStateFlow(currentOrderStatus)
 }

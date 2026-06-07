@@ -8,6 +8,8 @@ interface OrderRepository {
 
     fun getCurrentOrder(): Flow<Order?>
 
+    suspend fun initializeCurrentOrder()
+
     suspend fun createOrder(order: Order)
 
     suspend fun updateCurrentOrderStatus()

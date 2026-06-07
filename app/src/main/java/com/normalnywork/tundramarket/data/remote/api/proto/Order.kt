@@ -11,7 +11,7 @@ data class ProtoOrder(
     @ProtoNumber(1) val id: Int,
     @ProtoNumber(2) val nomadId: Int,
     @ProtoNumber(3) val tradingStationId: Int,
-    @ProtoNumber(4) val status: ProtoOrderStatus,
+    @ProtoNumber(4) val status: ProtoOrderStatus = ProtoOrderStatus.CREATED,
     @ProtoNumber(5) val history: List<ProtoOrderStatusHistory> = emptyList(),
     @ProtoNumber(6) val comment: String = "",
     @ProtoNumber(7) val card: List<ProtoProductCount> = emptyList(),

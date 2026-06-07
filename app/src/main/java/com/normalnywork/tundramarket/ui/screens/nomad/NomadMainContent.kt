@@ -127,6 +127,8 @@ private fun NomadMainContent(
                     ?.let {
                         CurrentOrderOverviewCard(order = it)
                     }
+
+                if (scrollState.canScrollBackward) HorizontalDivider(color = colors.stroke)
             }
         },
         content = { paddings ->
