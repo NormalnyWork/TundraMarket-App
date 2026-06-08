@@ -12,7 +12,9 @@ import com.normalnywork.tundramarket.data.local.db.entities.DB_ORDER_COL_ID
 import com.normalnywork.tundramarket.data.local.db.entities.DB_ORDER_COL_NETWORK_STATUS
 import com.normalnywork.tundramarket.data.local.db.entities.DB_ORDER_COL_SERVER_ID
 import com.normalnywork.tundramarket.data.local.db.entities.DB_ORDER_COL_STATUS
+import com.normalnywork.tundramarket.data.local.db.entities.DB_ORDER_PRODUCT_COL_IS_ASSEMBLED
 import com.normalnywork.tundramarket.data.local.db.entities.DB_ORDER_PRODUCT_COL_ORDER_ID
+import com.normalnywork.tundramarket.data.local.db.entities.DB_ORDER_PRODUCT_COL_PRODUCT_ID
 import com.normalnywork.tundramarket.data.local.db.entities.DB_ORDER_PRODUCT_TABLE_NAME
 import com.normalnywork.tundramarket.data.local.db.entities.DB_ORDER_STATUS_HISTORY_COL_ORDER_ID
 import com.normalnywork.tundramarket.data.local.db.entities.DB_ORDER_STATUS_HISTORY_TABLE_NAME
@@ -65,6 +67,16 @@ interface OrdersDao {
     @Transaction
     @Query("SELECT * FROM $DB_ORDER_TABLE_NAME WHERE $DB_ORDER_COL_ID = :localOrderId")
     suspend fun getOrderByLocalId(localOrderId: Int): OrderWithDetails?
+
+    @Transaction
+    @Query(
+        """
+        SELECT * FROM $DB_ORDER_TABLE_NAME
+        WHERE $DB_ORDER_COL_ID = :orderId OR $DB_ORDER_COL_SERVER_ID = :orderId
+        LIMIT 1
+        """,
+    )
+    fun getOrderByLocalOrServerIdFlow(orderId: Int): Flow<OrderWithDetails?>
 
     @Transaction
     @Query("SELECT * FROM $DB_ORDER_TABLE_NAME WHERE $DB_ORDER_COL_SERVER_ID = :serverOrderId")
@@ -130,6 +142,29 @@ interface OrdersDao {
 
     @Query("DELETE FROM $DB_ORDER_PRODUCT_TABLE_NAME WHERE $DB_ORDER_PRODUCT_COL_ORDER_ID = :localOrderId")
     suspend fun deleteOrderProducts(localOrderId: Int)
+
+    @Query(
+        """
+        SELECT $DB_ORDER_PRODUCT_COL_PRODUCT_ID FROM $DB_ORDER_PRODUCT_TABLE_NAME
+        WHERE $DB_ORDER_PRODUCT_COL_ORDER_ID = :localOrderId
+            AND $DB_ORDER_PRODUCT_COL_IS_ASSEMBLED = 1
+        """,
+    )
+    suspend fun getAssembledProductIds(localOrderId: Int): List<Int>
+
+    @Query(
+        """
+        UPDATE $DB_ORDER_PRODUCT_TABLE_NAME
+        SET $DB_ORDER_PRODUCT_COL_IS_ASSEMBLED = :isAssembled
+        WHERE $DB_ORDER_PRODUCT_COL_ORDER_ID = :localOrderId
+            AND $DB_ORDER_PRODUCT_COL_PRODUCT_ID = :productId
+        """,
+    )
+    suspend fun updateOrderProductAssembled(
+        localOrderId: Int,
+        productId: Int,
+        isAssembled: Boolean,
+    )
 
     @Query("DELETE FROM $DB_ORDER_STATUS_HISTORY_TABLE_NAME WHERE $DB_ORDER_STATUS_HISTORY_COL_ORDER_ID = :localOrderId")
     suspend fun deleteStatusHistory(localOrderId: Int)

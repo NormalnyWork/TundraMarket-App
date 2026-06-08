@@ -4,10 +4,16 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.normalnywork.tundramarket.data.local.db.dao.OrdersDao
 import com.normalnywork.tundramarket.data.local.db.dao.ProductsDao
 import com.normalnywork.tundramarket.data.local.db.dao.SyncOutboxDao
 import com.normalnywork.tundramarket.data.local.db.dao.TradingStationsDao
+import com.normalnywork.tundramarket.data.local.db.entities.DB_ORDER_PRODUCT_COL_IS_ASSEMBLED
+import com.normalnywork.tundramarket.data.local.db.entities.DB_ORDER_PRODUCT_TABLE_NAME
+import com.normalnywork.tundramarket.data.local.db.entities.DB_SYNC_OUTBOX_COL_COMMENT
+import com.normalnywork.tundramarket.data.local.db.entities.DB_SYNC_OUTBOX_TABLE_NAME
 import com.normalnywork.tundramarket.data.local.db.entities.OrderEntity
 import com.normalnywork.tundramarket.data.local.db.entities.OrderProductEntity
 import com.normalnywork.tundramarket.data.local.db.entities.OrderStatusHistoryEntity
@@ -25,7 +31,7 @@ import org.koin.core.annotation.Singleton
         OrderStatusHistoryEntity::class,
         SyncOutboxEntity::class,
     ],
-    version = 1,
+    version = 2,
 )
 abstract class TMDatabase : RoomDatabase() {
 
@@ -41,7 +47,26 @@ abstract class TMDatabase : RoomDatabase() {
 @Singleton
 fun provideDatabase(context: Context): TMDatabase {
     return Room.databaseBuilder(context, TMDatabase::class.java, "tm-db")
+        .addMigrations(MIGRATION_1_2)
         .build()
+}
+
+private val MIGRATION_1_2 = object : Migration(1, 2) {
+
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            ALTER TABLE $DB_ORDER_PRODUCT_TABLE_NAME
+            ADD COLUMN $DB_ORDER_PRODUCT_COL_IS_ASSEMBLED INTEGER NOT NULL DEFAULT 0
+            """.trimIndent(),
+        )
+        db.execSQL(
+            """
+            ALTER TABLE $DB_SYNC_OUTBOX_TABLE_NAME
+            ADD COLUMN $DB_SYNC_OUTBOX_COL_COMMENT TEXT
+            """.trimIndent(),
+        )
+    }
 }
 
 @Singleton

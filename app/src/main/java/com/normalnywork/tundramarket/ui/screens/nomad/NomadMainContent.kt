@@ -436,7 +436,9 @@ private fun OrderStatusCard(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     OrderStatusReasonCard(
-                        text = stringResource(R.string.nomad_main_status_denied_reason_unavailable),
+                        text = order.sourceOrder.comment.ifBlank {
+                            stringResource(R.string.nomad_main_status_denied_reason_unavailable)
+                        },
                     )
                     TMButtonSlider(
                         text = stringResource(R.string.nomad_main_repeat_order_action),

@@ -14,6 +14,13 @@ interface OrderHistorySyncStore {
 
     suspend fun areTradingStationPagesFullyCached(): Boolean
 
+    suspend fun getCurrentOrderStatusLastUpdated(orderId: Int): Long
+
+    suspend fun setCurrentOrderStatusLastUpdated(
+        orderId: Int,
+        lastUpdated: Long,
+    )
+
     suspend fun getTradingStationOrdersLastUpdated(): Long
 
     suspend fun setTradingStationOrdersLastUpdated(lastUpdated: Long)

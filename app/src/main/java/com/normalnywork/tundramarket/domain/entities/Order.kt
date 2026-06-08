@@ -13,4 +13,5 @@ data class Order(
     val status: OrderStatus,
     val statusHistory: List<OrderStatusHistory>,
     val networkStatus: OrderNetworkStatus? = null,
+    val assembledProductIds: Set<Int> = emptySet(),
 )

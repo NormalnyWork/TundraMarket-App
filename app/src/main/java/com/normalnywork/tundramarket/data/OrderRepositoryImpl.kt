@@ -51,16 +51,24 @@ class OrderRepositoryImpl(
             .map { orderWithDetails -> orderWithDetails?.toDomain() }
     }
 
+    override fun getOrder(orderId: Int): Flow<Order?> {
+        return ordersDao.getOrderByLocalOrServerIdFlow(orderId)
+            .map { orderWithDetails -> orderWithDetails?.toDomain() }
+    }
+
     override suspend fun initializeCurrentOrder() {
         val remoteOrder = remoteOrdersDataSource.getCurrentOrder() ?: return
         val tradingStation = tradingStationsDao.getTradingStationById(remoteOrder.tradingStationId)
             ?: error("Trading station ${remoteOrder.tradingStationId} is not cached")
+        val remoteLastUpdated = remoteOrder.statusHistory.maxOfOrNull { it.time }
 
         database.withTransaction {
             val localOrderId = upsertRemoteOrder(
                 remoteOrder = remoteOrder,
                 tradingStationId = tradingStation.id,
             )
+
+            val assembledProductIds = ordersDao.getAssembledProductIds(localOrderId).toSet()
 
             ordersDao.deleteOrderProducts(localOrderId)
             ordersDao.deleteStatusHistory(localOrderId)
@@ -70,6 +78,7 @@ class OrderRepositoryImpl(
                         orderId = localOrderId,
                         productId = productCount.productId,
                         count = productCount.count,
+                        isAssembled = productCount.productId in assembledProductIds,
                     )
                 },
             )
@@ -81,6 +90,13 @@ class OrderRepositoryImpl(
                         time = history.time,
                     )
                 },
+            )
+        }
+
+        if (remoteLastUpdated != null) {
+            orderHistorySyncStore.setCurrentOrderStatusLastUpdated(
+                orderId = remoteOrder.id,
+                lastUpdated = remoteLastUpdated,
             )
         }
     }
@@ -131,7 +147,10 @@ class OrderRepositoryImpl(
         )
     }
 
-    override suspend fun changeOrderStatus(order: Order) {
+    override suspend fun changeOrderStatus(
+        order: Order,
+        comment: String?,
+    ) {
         val localOrder = ordersDao.getOrderByLocalOrServerId(order.id) ?: return
         val localOrderId = localOrder.order.id
         val status = OrderStatusEntity.valueOf(order.status.name)
@@ -190,6 +209,7 @@ class OrderRepositoryImpl(
                     nextAttemptAt = now,
                     createdAt = now,
                     idempotencyKey = UUID.randomUUID().toString(),
+                    comment = comment,
                 ),
             )
         }
@@ -197,6 +217,20 @@ class OrderRepositoryImpl(
         if (shouldScheduleSync) {
             syncWorkScheduler.schedule()
         }
+    }
+
+    override suspend fun setOrderProductAssembled(
+        order: Order,
+        productId: Int,
+        isAssembled: Boolean,
+    ) {
+        val localOrder = ordersDao.getOrderByLocalOrServerId(order.id) ?: return
+
+        ordersDao.updateOrderProductAssembled(
+            localOrderId = localOrder.order.id,
+            productId = productId,
+            isAssembled = isAssembled,
+        )
     }
 
     override fun getProcessingOrders(): Flow<PagingData<Order>> {
@@ -316,6 +350,8 @@ class OrderRepositoryImpl(
             tradingStationId = tradingStation.id,
         )
 
+        val assembledProductIds = ordersDao.getAssembledProductIds(localOrderId).toSet()
+
         ordersDao.deleteOrderProducts(localOrderId)
         ordersDao.deleteStatusHistory(localOrderId)
         ordersDao.insertOrderProducts(
@@ -324,6 +360,7 @@ class OrderRepositoryImpl(
                     orderId = localOrderId,
                     productId = productCount.productId,
                     count = productCount.count,
+                    isAssembled = productCount.productId in assembledProductIds,
                 )
             },
         )

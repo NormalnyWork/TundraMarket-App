@@ -17,6 +17,7 @@ interface RemoteOrdersDataSource {
         orderId: Int,
         status: OrderStatus,
         idempotencyKey: String,
+        comment: String? = null,
     ): Long
 
     suspend fun checkCurrentOrderStatus(lastUpdated: Long): OrderStatusUpdates

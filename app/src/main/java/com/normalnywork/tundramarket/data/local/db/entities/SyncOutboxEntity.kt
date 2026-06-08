@@ -15,6 +15,7 @@ const val DB_SYNC_OUTBOX_COL_NEXT_ATTEMPT_AT = "next_attempt_at"
 const val DB_SYNC_OUTBOX_COL_CREATED_AT = "created_at"
 const val DB_SYNC_OUTBOX_COL_IDEMPOTENCY_KEY = "idempotency_key"
 const val DB_SYNC_OUTBOX_COL_LAST_ERROR = "last_error"
+const val DB_SYNC_OUTBOX_COL_COMMENT = "comment"
 
 @Entity(
     tableName = DB_SYNC_OUTBOX_TABLE_NAME,
@@ -46,4 +47,6 @@ data class SyncOutboxEntity(
     val idempotencyKey: String,
     @ColumnInfo(name = DB_SYNC_OUTBOX_COL_LAST_ERROR)
     val lastError: String? = null,
+    @ColumnInfo(name = DB_SYNC_OUTBOX_COL_COMMENT)
+    val comment: String? = null,
 )

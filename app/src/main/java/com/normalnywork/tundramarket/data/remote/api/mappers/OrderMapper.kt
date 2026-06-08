@@ -14,6 +14,10 @@ import com.normalnywork.tundramarket.domain.entities.Order
 import com.normalnywork.tundramarket.domain.entities.OrderStatus
 import com.normalnywork.tundramarket.domain.entities.OrderStatusHistory
 
+fun Long.unixMillisecondsToSeconds() = this / MILLIS_IN_SECOND
+
+fun Long.unixSecondsToMilliseconds() = this * MILLIS_IN_SECOND
+
 fun Order.toCreateRequest() = CreateOrderRequest(
     nomadId = nomadId.takeIf { it > 0 },
     tradingStationId = tradingStation.id,
@@ -27,9 +31,13 @@ fun Order.toCreateRequest() = CreateOrderRequest(
     comment = comment,
 )
 
-fun OrderStatus.toChangeStatusRequest(orderId: Int) = ChangeOrderStatusRequest(
+fun OrderStatus.toChangeStatusRequest(
+    orderId: Int,
+    comment: String? = null,
+) = ChangeOrderStatusRequest(
     orderId = orderId,
     newStatus = toProto(),
+    comment = comment,
 )
 
 fun CheckOrderStatusResponse.toOrderStatusUpdates() = RemoteOrdersDataSource.OrderStatusUpdates(
@@ -61,7 +69,7 @@ private fun ProtoOrder.toOrderListItem() = RemoteOrdersDataSource.OrderListItem(
 
 private fun ProtoOrderStatusHistory.toDomain() = OrderStatusHistory(
     status = status.toDomain(),
-    time = time,
+    time = time.unixSecondsToMilliseconds(),
 )
 
 private fun ProtoOrderStatus.toDomain() = when (this) {
@@ -81,3 +89,5 @@ private fun OrderStatus.toProto() = when (this) {
     OrderStatus.Cancelled -> ProtoOrderStatus.CANCELLED
     OrderStatus.Denied -> ProtoOrderStatus.DENIED
 }
+
+private const val MILLIS_IN_SECOND = 1_000L

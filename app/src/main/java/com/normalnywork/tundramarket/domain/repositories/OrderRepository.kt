@@ -8,13 +8,24 @@ interface OrderRepository {
 
     fun getCurrentOrder(): Flow<Order?>
 
+    fun getOrder(orderId: Int): Flow<Order?>
+
     suspend fun initializeCurrentOrder()
 
     suspend fun createOrder(order: Order)
 
     suspend fun updateCurrentOrderStatus()
 
-    suspend fun changeOrderStatus(order: Order)
+    suspend fun changeOrderStatus(
+        order: Order,
+        comment: String? = null,
+    )
+
+    suspend fun setOrderProductAssembled(
+        order: Order,
+        productId: Int,
+        isAssembled: Boolean,
+    )
 
     fun getProcessingOrders(): Flow<PagingData<Order>>
 

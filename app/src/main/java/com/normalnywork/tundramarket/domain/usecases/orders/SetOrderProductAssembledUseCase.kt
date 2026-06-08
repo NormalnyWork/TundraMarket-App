@@ -1,21 +1,21 @@
 package com.normalnywork.tundramarket.domain.usecases.orders
 
 import com.normalnywork.tundramarket.domain.entities.Order
-import com.normalnywork.tundramarket.domain.entities.OrderStatus
 import com.normalnywork.tundramarket.domain.repositories.OrderRepository
 import org.koin.core.annotation.Singleton
 
 @Singleton
-class ChangeOrderStatusUseCase(private val repository: OrderRepository) {
+class SetOrderProductAssembledUseCase(private val repository: OrderRepository) {
 
     suspend operator fun invoke(
         order: Order,
-        status: OrderStatus,
-        comment: String? = null,
+        productId: Int,
+        isAssembled: Boolean,
     ) {
-        repository.changeOrderStatus(
-            order = order.copy(status = status),
-            comment = comment,
+        repository.setOrderProductAssembled(
+            order = order,
+            productId = productId,
+            isAssembled = isAssembled,
         )
     }
 }

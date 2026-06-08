@@ -7,6 +7,7 @@ const val DB_ORDER_PRODUCT_TABLE_NAME = "order_products"
 const val DB_ORDER_PRODUCT_COL_ORDER_ID = "order_id"
 const val DB_ORDER_PRODUCT_COL_PRODUCT_ID = "product_id"
 const val DB_ORDER_PRODUCT_COL_COUNT = "count"
+const val DB_ORDER_PRODUCT_COL_IS_ASSEMBLED = "is_assembled"
 
 @Entity(
     tableName = DB_ORDER_PRODUCT_TABLE_NAME,
@@ -19,4 +20,6 @@ data class OrderProductEntity(
     val productId: Int,
     @ColumnInfo(name = DB_ORDER_PRODUCT_COL_COUNT)
     val count: Int,
+    @ColumnInfo(name = DB_ORDER_PRODUCT_COL_IS_ASSEMBLED)
+    val isAssembled: Boolean = false,
 )

@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -124,7 +125,11 @@ private fun NomadOrderDetailsBottomBar(
     showDivider: Boolean,
     onRepeatOrderClick: () -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(LocalTMColors.current.background),
+    ) {
         HorizontalDivider(
             color = if (showDivider) {
                 LocalTMColors.current.stroke

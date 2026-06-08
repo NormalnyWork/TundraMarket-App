@@ -504,7 +504,11 @@ private fun OrderStatus.titleRes() = when (this) {
 @Composable
 private fun Order.statusBody() = when (status) {
     OrderStatus.Created -> statusHistory.first { it.status == status }.time.toCreatedTime()
-    OrderStatus.Processing -> stringResource(R.string.trading_station_order_status_processing_body)
+    OrderStatus.Processing -> stringResource(
+        R.string.trading_station_order_status_processing_body,
+        assembledProductIds.size,
+        cart.size,
+    )
     OrderStatus.Sent -> stringResource(R.string.trading_station_order_status_sent_body)
     OrderStatus.Completed -> stringResource(R.string.trading_station_order_status_completed_body)
     OrderStatus.Cancelled -> stringResource(R.string.trading_station_order_status_cancelled_body)

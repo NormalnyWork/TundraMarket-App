@@ -18,6 +18,10 @@ fun OrderWithDetails.toDomain() = Order(
     nomadId = order.nomadId,
     tradingStation = tradingStation.toDomain(),
     cart = cart.map { it.toDomain() },
+    assembledProductIds = cart
+        .filter { it.orderProduct.isAssembled }
+        .map { it.orderProduct.productId }
+        .toSet(),
     location = order.location.toDomain(),
     comment = order.comment,
     status = order.status.toDomain(),

@@ -11,6 +11,7 @@ import com.normalnywork.tundramarket.data.local.db.entities.SyncOperationTypeEnt
 import com.normalnywork.tundramarket.data.local.db.entities.SyncOutboxEntity
 import com.normalnywork.tundramarket.data.local.db.entities.SyncOutboxStatusEntity
 import com.normalnywork.tundramarket.data.local.db.mappers.toDomain
+import com.normalnywork.tundramarket.data.local.preferences.OrderHistorySyncStore
 import com.normalnywork.tundramarket.data.remote.source.RemoteOrdersDataSource
 import com.normalnywork.tundramarket.utils.NetworkStatusObserver
 import io.ktor.client.plugins.ClientRequestException
@@ -27,6 +28,7 @@ class OutboxSyncProcessor(
     private val ordersDao: OrdersDao,
     private val syncOutboxDao: SyncOutboxDao,
     private val remoteOrdersDataSource: RemoteOrdersDataSource,
+    private val orderHistorySyncStore: OrderHistorySyncStore,
     private val networkStatusObserver: NetworkStatusObserver,
 ) {
 
@@ -177,6 +179,7 @@ class OutboxSyncProcessor(
                 orderId = serverOrderId,
                 status = status,
                 idempotencyKey = operation.idempotencyKey,
+                comment = operation.comment,
             )
         }.fold(
             onSuccess = {
@@ -203,7 +206,8 @@ class OutboxSyncProcessor(
         val order = ordersDao.getLatestOrderByStatusesOnce(ACTIVE_ORDER_STATUSES) ?: return OperationResult.Success
         val serverOrderId = order.order.serverId ?: return OperationResult.Success
         val localOrderId = order.order.id
-        val lastUpdated = order.statusHistory.maxOfOrNull { it.time } ?: 0L
+        val lastUpdated = orderHistorySyncStore.getCurrentOrderStatusLastUpdated(serverOrderId)
+        val existingStatuses = order.statusHistory.map { it.status.name }.toSet()
 
         if (!retryWhenWaitingForNetwork && !networkStatusObserver.isConnected()) {
             markCurrentOrderStatusWaitingForNetwork(localOrderId)
@@ -222,7 +226,14 @@ class OutboxSyncProcessor(
             remoteOrdersDataSource.checkCurrentOrderStatus(lastUpdated = lastUpdated)
         }.fold(
             onSuccess = { updates ->
-                val statusUpdates = updates.statusHistory.filter { it.time > lastUpdated }
+                val remoteLastUpdated = if (updates.orderId == serverOrderId) {
+                    updates.statusHistory.maxOfOrNull { it.time }
+                } else {
+                    null
+                }
+                val statusUpdates = updates.statusHistory.filter { update ->
+                    update.time > lastUpdated && update.status.name !in existingStatuses
+                }
 
                 database.withTransaction {
                     if (updates.orderId == serverOrderId && statusUpdates.isNotEmpty()) {
@@ -245,6 +256,12 @@ class OutboxSyncProcessor(
                     ordersDao.updateNetworkStatus(
                         localOrderId = localOrderId,
                         networkStatus = null,
+                    )
+                }
+                if (remoteLastUpdated != null) {
+                    orderHistorySyncStore.setCurrentOrderStatusLastUpdated(
+                        orderId = serverOrderId,
+                        lastUpdated = remoteLastUpdated,
                     )
                 }
                 OperationResult.Success

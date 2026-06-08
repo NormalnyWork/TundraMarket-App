@@ -5,6 +5,8 @@ import com.normalnywork.tundramarket.data.remote.api.mappers.toCreateRequest
 import com.normalnywork.tundramarket.data.remote.api.mappers.toOrderListItem
 import com.normalnywork.tundramarket.data.remote.api.mappers.toOrderListPage
 import com.normalnywork.tundramarket.data.remote.api.mappers.toOrderStatusUpdates
+import com.normalnywork.tundramarket.data.remote.api.mappers.unixMillisecondsToSeconds
+import com.normalnywork.tundramarket.data.remote.api.mappers.unixSecondsToMilliseconds
 import com.normalnywork.tundramarket.data.remote.api.proto.ChangeOrderStatusResponse
 import com.normalnywork.tundramarket.data.remote.api.proto.CheckOrderStatusRequest
 import com.normalnywork.tundramarket.data.remote.api.proto.CheckOrderStatusResponse
@@ -53,23 +55,33 @@ class KtorRemoteOrdersDataSource(
         orderId: Int,
         status: OrderStatus,
         idempotencyKey: String,
+        comment: String?,
     ): Long {
         val response = httpClient
             .post(Order.ChangeStatus()) {
                 contentType(ContentType.Application.ProtoBuf)
                 header(IDEMPOTENCY_KEY_HEADER, idempotencyKey)
-                setBody(status.toChangeStatusRequest(orderId = orderId))
+                setBody(
+                    status.toChangeStatusRequest(
+                        orderId = orderId,
+                        comment = comment,
+                    ),
+                )
             }
             .body<ChangeOrderStatusResponse>()
 
-        return response.time
+        return response.time.unixSecondsToMilliseconds()
     }
 
     override suspend fun checkCurrentOrderStatus(lastUpdated: Long): RemoteOrdersDataSource.OrderStatusUpdates {
         return httpClient
             .post(Order.CheckStatus()) {
                 contentType(ContentType.Application.ProtoBuf)
-                setBody(CheckOrderStatusRequest(lastUpdated = lastUpdated))
+                setBody(
+                    CheckOrderStatusRequest(
+                        lastUpdated = lastUpdated.unixMillisecondsToSeconds(),
+                    ),
+                )
             }
             .body<CheckOrderStatusResponse>()
             .toOrderStatusUpdates()
@@ -109,7 +121,11 @@ class KtorRemoteOrdersDataSource(
         return httpClient
             .post(Order.Updates()) {
                 contentType(ContentType.Application.ProtoBuf)
-                setBody(OrderUpdatesRequest(lastUpdated = lastUpdated))
+                setBody(
+                    OrderUpdatesRequest(
+                        lastUpdated = lastUpdated.unixMillisecondsToSeconds(),
+                    ),
+                )
             }
             .body<OrderListResponse>()
             .toOrderListPage()

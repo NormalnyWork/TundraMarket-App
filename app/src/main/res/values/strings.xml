@@ -158,4 +158,21 @@
     <string name="trading_station_order_status_cancelled_body">Заказ был отменен пользователем</string>
     <string name="trading_station_order_status_denied_title">Отклонен</string>
     <string name="trading_station_order_status_denied_body">Заказ не был взят в обработку</string>
+    <string name="trading_station_order_details_status_created_body">Ожидается решение по заказу</string>
+    <string name="trading_station_order_details_status_processing_body">Сборка заказа и подготовка к отправке</string>
+    <string name="trading_station_order_details_status_sent_body">Ожидается подтверждение доставки заказа</string>
+    <string name="trading_station_order_details_distance_from_station">%1$d км от фактории</string>
+    <string name="trading_station_order_details_volume_label">Объем</string>
+    <string name="trading_station_order_details_weight_label">Вес</string>
+    <string name="trading_station_order_details_accept_action">Принять</string>
+    <string name="trading_station_order_details_decline_action">Отклонить</string>
+    <string name="trading_station_order_details_send_action">Отправить</string>
+    <string name="trading_station_order_details_confirm_action">Подтвердить</string>
+    <string name="trading_station_order_assembly_title">Сборка</string>
+    <string name="trading_station_order_assembly_count">Собрано %1$d из %2$d</string>
+    <string name="trading_station_order_decline_dialog_title">Введите комментарий</string>
+    <string name="trading_station_order_decline_dialog_body">Необходимо указать причину отклонения заказа</string>
+    <string name="trading_station_order_incomplete_send_dialog_title">Подтвердите отправку</string>
+    <string name="trading_station_order_incomplete_send_dialog_body">Заказ собран не полностью. Вы действительно хотите изменить статус на “Отправлен”?</string>
+    <string name="trading_station_order_dialog_cancel_action">Отмена</string>
 </resources>

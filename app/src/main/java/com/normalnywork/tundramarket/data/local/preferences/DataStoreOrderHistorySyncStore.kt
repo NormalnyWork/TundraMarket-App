@@ -18,6 +18,10 @@ private val IS_TRADING_STATION_HISTORY_ORDERS_FULLY_CACHED_KEY =
     booleanPreferencesKey("is_trading_station_history_orders_fully_cached")
 private val TRADING_STATION_ORDERS_LAST_UPDATED_KEY =
     longPreferencesKey("trading_station_orders_last_updated")
+private val CURRENT_ORDER_STATUS_LAST_UPDATED_ORDER_ID_KEY =
+    longPreferencesKey("current_order_status_last_updated_order_id")
+private val CURRENT_ORDER_STATUS_LAST_UPDATED_KEY =
+    longPreferencesKey("current_order_status_last_updated")
 
 @Singleton
 class DataStoreOrderHistorySyncStore(private val context: Context) : OrderHistorySyncStore {
@@ -47,6 +51,36 @@ class DataStoreOrderHistorySyncStore(private val context: Context) : OrderHistor
         TradingStationOrdersPage.entries.all { page ->
             isTradingStationPageFullyCached(page)
         }
+
+    override suspend fun getCurrentOrderStatusLastUpdated(orderId: Int) =
+        context.authPreferencesDataStore.data
+            .map { preferences ->
+                if (preferences[CURRENT_ORDER_STATUS_LAST_UPDATED_ORDER_ID_KEY] == orderId.toLong()) {
+                    preferences[CURRENT_ORDER_STATUS_LAST_UPDATED_KEY] ?: 0L
+                } else {
+                    0L
+                }
+            }
+            .first()
+
+    override suspend fun setCurrentOrderStatusLastUpdated(
+        orderId: Int,
+        lastUpdated: Long,
+    ) {
+        context.authPreferencesDataStore.edit { preferences ->
+            val storedOrderId = preferences[CURRENT_ORDER_STATUS_LAST_UPDATED_ORDER_ID_KEY]
+            val storedLastUpdated = if (storedOrderId == orderId.toLong()) {
+                preferences[CURRENT_ORDER_STATUS_LAST_UPDATED_KEY] ?: 0L
+            } else {
+                0L
+            }
+
+            if (lastUpdated > storedLastUpdated) {
+                preferences[CURRENT_ORDER_STATUS_LAST_UPDATED_ORDER_ID_KEY] = orderId.toLong()
+                preferences[CURRENT_ORDER_STATUS_LAST_UPDATED_KEY] = lastUpdated
+            }
+        }
+    }
 
     override suspend fun getTradingStationOrdersLastUpdated() =
         context.authPreferencesDataStore.data

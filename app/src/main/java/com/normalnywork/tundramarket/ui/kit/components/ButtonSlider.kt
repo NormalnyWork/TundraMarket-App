@@ -142,9 +142,6 @@ fun TMButtonSlider(
                 onDragCancel = { animateBack() },
             )
         }
-        .pointerInput(Unit) {
-            detectTapGestures(onTap = { triggerShake() })
-        }
 
     val pad = maxPaddingPx * (1f - progress)
     val filledWidth = with(density) { (handleSizePx + dragOffset.value).toDp() }
@@ -158,7 +155,8 @@ fun TMButtonSlider(
             .height(ButtonSliderTokens.Height)
             .clip(ButtonSliderTokens.Shape)
             .background(colors.backgroundColor)
-            .onSizeChanged { containerWidthPx = it.width.toFloat() },
+            .onSizeChanged { containerWidthPx = it.width.toFloat() }
+            .pointerInput(Unit) { detectTapGestures(onTap = { triggerShake() }) },
     ) {
         Box(
             modifier = Modifier
