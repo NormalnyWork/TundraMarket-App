@@ -8,13 +8,17 @@ import com.arkivanov.decompose.router.stack.childStack
 import com.arkivanov.decompose.router.stack.pop
 import com.arkivanov.decompose.router.stack.pushNew
 import com.arkivanov.decompose.value.Value
+import com.normalnywork.tundramarket.domain.entities.Order
 import com.normalnywork.tundramarket.ui.screens.tradingstation.TradingStationMainComponent
 import com.normalnywork.tundramarket.ui.screens.tradingstation.TradingStationOrderDetailsComponent
 import kotlinx.serialization.Serializable
+import org.koin.core.annotation.Singleton
 
 @OptIn(DelicateDecomposeApi::class)
 class TradingStationFlowComponent(
     componentContext: ComponentContext,
+    private val tradingStationMainComponentFactory: TradingStationMainComponent.Factory,
+    private val tradingStationOrderDetailsComponentFactory: TradingStationOrderDetailsComponent.Factory,
 ) : ComponentContext by componentContext {
 
     private val navigation = StackNavigation<Config>()
@@ -30,16 +34,16 @@ class TradingStationFlowComponent(
     private fun child(config: Config, componentContext: ComponentContext): Child =
         when (config) {
             Config.Main -> Child.Main(
-                component = TradingStationMainComponent(
+                component = tradingStationMainComponentFactory(
                     componentContext = componentContext,
-                    onOpenOrderDetails = { orderId -> navigation.pushNew(Config.OrderDetails(orderId)) },
+                    onOpenOrderDetails = { order -> navigation.pushNew(Config.OrderDetails(order)) },
                 ),
             )
 
             is Config.OrderDetails -> Child.OrderDetails(
-                component = TradingStationOrderDetailsComponent(
+                component = tradingStationOrderDetailsComponentFactory(
                     componentContext = componentContext,
-                    orderId = config.orderId,
+                    order = config.order,
                     onBack = navigation::pop,
                 ),
             )
@@ -60,6 +64,19 @@ class TradingStationFlowComponent(
         data object Main : Config
 
         @Serializable
-        data class OrderDetails(val orderId: Int) : Config
+        data class OrderDetails(val order: Order) : Config
+    }
+
+    @Singleton
+    class Factory(
+        private val tradingStationMainComponentFactory: TradingStationMainComponent.Factory,
+        private val tradingStationOrderDetailsComponentFactory: TradingStationOrderDetailsComponent.Factory,
+    ) {
+
+        operator fun invoke(componentContext: ComponentContext) = TradingStationFlowComponent(
+            componentContext = componentContext,
+            tradingStationMainComponentFactory = tradingStationMainComponentFactory,
+            tradingStationOrderDetailsComponentFactory = tradingStationOrderDetailsComponentFactory,
+        )
     }
 }

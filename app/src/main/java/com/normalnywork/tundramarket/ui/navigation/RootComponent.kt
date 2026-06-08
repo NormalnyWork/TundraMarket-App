@@ -19,6 +19,7 @@ class RootComponent(
     userRole: UserRole?,
     private val authFlowComponentFactory: AuthFlowComponent.Factory,
     private val nomadFlowComponentFactory: NomadFlowComponent.Factory,
+    private val tradingStationFlowComponentFactory: TradingStationFlowComponent.Factory,
 ) : ComponentContext by componentContext {
 
     private val navigation = StackNavigation<Config>()
@@ -48,7 +49,7 @@ class RootComponent(
             )
 
             Config.TradingStation -> Child.TradingStation(
-                component = TradingStationFlowComponent(
+                component = tradingStationFlowComponentFactory(
                     componentContext = componentContext,
                 ),
             )
@@ -72,6 +73,7 @@ class RootComponent(
     class Factory(
         private val authFlowComponentFactory: AuthFlowComponent.Factory,
         private val nomadFlowComponentFactory: NomadFlowComponent.Factory,
+        private val tradingStationFlowComponentFactory: TradingStationFlowComponent.Factory,
     ) {
 
         operator fun invoke(
@@ -82,6 +84,7 @@ class RootComponent(
             userRole = userRole,
             authFlowComponentFactory = authFlowComponentFactory,
             nomadFlowComponentFactory = nomadFlowComponentFactory,
+            tradingStationFlowComponentFactory = tradingStationFlowComponentFactory,
         )
     }
 

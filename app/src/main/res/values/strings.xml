@@ -33,11 +33,6 @@
     <string name="nomad_main_order_status_title">Текущий заказ</string>
     <string name="nomad_main_order_status_loading">Загрузка состояния заказа...</string>
     <string name="nomad_main_order_status_empty">Активного заказа нет</string>
-    <string name="nomad_main_order_status_order">Заказ №%1$d: %2$s</string>
-    <string name="nomad_main_order_status_enqueued">ожидает отправки</string>
-    <string name="nomad_main_order_status_processing">отправляется на сервер</string>
-    <string name="nomad_main_order_status_failed">не удалось отправить</string>
-    <string name="nomad_main_order_status_created">создан на сервере</string>
     <string name="nomad_main_order_title">Заказ %1$d</string>
     <string name="nomad_main_order_details_title">Детали</string>
     <string name="nomad_main_history_action">История</string>
@@ -79,6 +74,7 @@
     <string name="nomad_main_status_history_cancelled">Отменен</string>
     <string name="nomad_main_status_history_denied">Отклонен</string>
     <string name="nomad_main_status_history_today_time">Сегодня, %1$s</string>
+    <string name="nomad_main_status_history_yesterday_time">Вчера, %1$s</string>
 
     <string name="nomad_history_title">История заказов</string>
     <string name="nomad_history_loading">Загрузка</string>
@@ -135,4 +131,31 @@
     <string name="nomad_create_order_next_action">Далее</string>
     <string name="nomad_create_order_skip_action">Пропустить</string>
     <string name="nomad_create_order_create_action">Создать заказ</string>
+
+    <string name="trading_station_orders_tab_active">В работе</string>
+    <string name="trading_station_orders_tab_new">Новые заказы</string>
+    <string name="trading_station_orders_tab_history">История</string>
+    <string name="trading_station_orders_empty_title">Нет заказов</string>
+    <string name="trading_station_orders_empty_active_body">Взять заказ в работу можно на вкладке с новыми заказами</string>
+    <string name="trading_station_orders_empty_new_body">Когда поступит новый заказ - он появится здесь</string>
+    <string name="trading_station_orders_empty_history_body">Выполненные заказы будут отображаться здесь</string>
+    <string name="trading_station_orders_empty_active_action">К новым заказам</string>
+    <string name="trading_station_order_title">Заказ %1$d</string>
+    <string name="trading_station_order_details_title">Заказ %1$d</string>
+    <string name="trading_station_order_details_action">Подробнее</string>
+    <string name="trading_station_order_status_label">Статус</string>
+    <string name="trading_station_order_status_created_title">Новый заказ</string>
+    <string name="trading_station_order_status_created_body">Создан %1$s в %2$s</string>
+    <string name="trading_station_order_status_created_today">сегодня</string>
+    <string name="trading_station_order_status_created_yesterday">вчера</string>
+    <string name="trading_station_order_status_processing_title">В обработке</string>
+    <string name="trading_station_order_status_processing_body">Собрано позиций: %1$d/%2$d</string>
+    <string name="trading_station_order_status_sent_title">Отправлен</string>
+    <string name="trading_station_order_status_sent_body">Необходимо подтвердить доставку</string>
+    <string name="trading_station_order_status_completed_title">Выполнен</string>
+    <string name="trading_station_order_status_completed_body">Доставка подтверждена</string>
+    <string name="trading_station_order_status_cancelled_title">Отменен</string>
+    <string name="trading_station_order_status_cancelled_body">Заказ был отменен пользователем</string>
+    <string name="trading_station_order_status_denied_title">Отклонен</string>
+    <string name="trading_station_order_status_denied_body">Заказ не был взят в обработку</string>
 </resources>

@@ -22,5 +22,9 @@ interface OrderRepository {
 
     fun getHistoryOrders(): Flow<PagingData<Order>>
 
+    fun getTradingStationHistoryOrders(): Flow<PagingData<Order>>
+
+    fun hasNewOrders(): Flow<Boolean>
+
     suspend fun updateOrders()
 }

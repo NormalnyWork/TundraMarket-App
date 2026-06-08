@@ -25,11 +25,11 @@ import com.normalnywork.tundramarket.data.remote.source.RemoteOrdersDataSource
 import com.normalnywork.tundramarket.domain.entities.Order
 import com.normalnywork.tundramarket.domain.entities.OrderNetworkStatus
 import com.normalnywork.tundramarket.domain.entities.OrderStatus
+import com.normalnywork.tundramarket.domain.entities.TradingStationOrdersPage
 import com.normalnywork.tundramarket.domain.repositories.OrderRepository
 import com.normalnywork.tundramarket.sync.SyncWorkScheduler
 import com.normalnywork.tundramarket.utils.NetworkStatusObserver
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import org.koin.core.annotation.Singleton
 import java.util.UUID
@@ -200,11 +200,11 @@ class OrderRepositoryImpl(
     }
 
     override fun getProcessingOrders(): Flow<PagingData<Order>> {
-        return flowOf(PagingData.empty())
+        return getOrdersByStatuses(PROCESSING_ORDER_STATUSES)
     }
 
     override fun getNewOrders(): Flow<PagingData<Order>> {
-        return flowOf(PagingData.empty())
+        return getOrdersByStatuses(NEW_ORDER_STATUSES)
     }
 
     @OptIn(ExperimentalPagingApi::class)
@@ -221,18 +221,144 @@ class OrderRepositoryImpl(
                 remoteOrdersDataSource = remoteOrdersDataSource,
                 orderHistorySyncStore = orderHistorySyncStore,
                 networkStatusObserver = networkStatusObserver,
-                historyOrderStatuses = HISTORY_ORDER_STATUSES,
+                historyOrderStatuses = NOMAD_HISTORY_ORDER_STATUSES,
                 pageSize = HISTORY_PAGE_SIZE,
             ),
             pagingSourceFactory = {
-                ordersDao.getOrdersByStatusesPaged(HISTORY_ORDER_STATUSES)
+                ordersDao.getOrdersByStatusesPaged(NOMAD_HISTORY_ORDER_STATUSES)
             },
         ).flow.map { pagingData ->
             pagingData.map { orderWithDetails -> orderWithDetails.toDomain() }
         }
     }
 
-    override suspend fun updateOrders() = Unit
+    override fun getTradingStationHistoryOrders(): Flow<PagingData<Order>> {
+        return getOrdersByStatuses(TRADING_STATION_HISTORY_ORDER_STATUSES)
+    }
+
+    override fun hasNewOrders(): Flow<Boolean> {
+        return ordersDao.getOrderCountByStatuses(NEW_ORDER_STATUSES)
+            .map { count -> count > 0 }
+    }
+
+    override suspend fun updateOrders() {
+        if (!networkStatusObserver.isConnected()) return
+
+        if (!orderHistorySyncStore.areTradingStationPagesFullyCached()) {
+            cacheTradingStationPages()
+        }
+
+        if (orderHistorySyncStore.areTradingStationPagesFullyCached()) {
+            val page = remoteOrdersDataSource.getOrderUpdates(
+                lastUpdated = orderHistorySyncStore.getTradingStationOrdersLastUpdated(),
+            )
+
+            database.withTransaction {
+                page.orders.forEach { remoteOrder ->
+                    upsertRemoteOrderWithDetails(remoteOrder)
+                }
+            }
+            updateTradingStationOrdersLastUpdated(page.orders)
+        }
+    }
+
+    private fun getOrdersByStatuses(statuses: List<OrderStatusEntity>): Flow<PagingData<Order>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = ORDERS_PAGE_SIZE,
+                enablePlaceholders = false,
+            ),
+            pagingSourceFactory = {
+                ordersDao.getOrdersByStatusesPaged(statuses)
+            },
+        ).flow.map { pagingData ->
+            pagingData.map { orderWithDetails -> orderWithDetails.toDomain() }
+        }
+    }
+
+    private suspend fun cacheTradingStationPages() {
+        TradingStationOrdersPage.entries.forEach { page ->
+            if (!orderHistorySyncStore.isTradingStationPageFullyCached(page)) {
+                cacheTradingStationPage(page)
+            }
+        }
+    }
+
+    private suspend fun cacheTradingStationPage(page: TradingStationOrdersPage) {
+        val statuses = page.toOrderStatuses()
+
+        while (!orderHistorySyncStore.isTradingStationPageFullyCached(page)) {
+            val anchor = ordersDao.getOldestServerIdByStatuses(statuses)
+            val remotePage = remoteOrdersDataSource.getTradingStationOrders(
+                page = page,
+                anchor = anchor,
+                pageSize = ORDERS_PAGE_SIZE,
+            )
+
+            database.withTransaction {
+                remotePage.orders.forEach { remoteOrder ->
+                    upsertRemoteOrderWithDetails(remoteOrder)
+                }
+            }
+            updateTradingStationOrdersLastUpdated(remotePage.orders)
+
+            if (remotePage.orders.size < ORDERS_PAGE_SIZE) {
+                orderHistorySyncStore.markTradingStationPageFullyCached(page)
+            }
+        }
+    }
+
+    private suspend fun upsertRemoteOrderWithDetails(remoteOrder: RemoteOrdersDataSource.OrderListItem): Int {
+        val tradingStation = tradingStationsDao.getTradingStationById(remoteOrder.tradingStationId)
+            ?: error("Trading station ${remoteOrder.tradingStationId} is not cached")
+        val localOrderId = upsertRemoteOrder(
+            remoteOrder = remoteOrder,
+            tradingStationId = tradingStation.id,
+        )
+
+        ordersDao.deleteOrderProducts(localOrderId)
+        ordersDao.deleteStatusHistory(localOrderId)
+        ordersDao.insertOrderProducts(
+            remoteOrder.cart.map { productCount ->
+                OrderProductEntity(
+                    orderId = localOrderId,
+                    productId = productCount.productId,
+                    count = productCount.count,
+                )
+            },
+        )
+        ordersDao.insertStatusHistory(
+            remoteOrder.statusHistory.map { history ->
+                OrderStatusHistoryEntity(
+                    orderId = localOrderId,
+                    status = OrderStatusEntity.valueOf(history.status.name),
+                    time = history.time,
+                )
+            },
+        )
+
+        return localOrderId
+    }
+
+    private suspend fun updateTradingStationOrdersLastUpdated(
+        orders: List<RemoteOrdersDataSource.OrderListItem>,
+    ) {
+        val remoteLastUpdated = orders
+            .flatMap { order -> order.statusHistory }
+            .maxOfOrNull { history -> history.time }
+            ?: return
+        val cachedLastUpdated = orderHistorySyncStore.getTradingStationOrdersLastUpdated()
+
+        if (remoteLastUpdated > cachedLastUpdated) {
+            orderHistorySyncStore.setTradingStationOrdersLastUpdated(remoteLastUpdated)
+        }
+    }
+
+    private fun TradingStationOrdersPage.toOrderStatuses() = when (this) {
+        TradingStationOrdersPage.Active -> PROCESSING_ORDER_STATUSES
+        TradingStationOrdersPage.New -> NEW_ORDER_STATUSES
+        TradingStationOrdersPage.History -> TRADING_STATION_HISTORY_ORDER_STATUSES
+    }
 
     private suspend fun upsertRemoteOrder(
         remoteOrder: RemoteOrdersDataSource.OrderListItem,
@@ -262,7 +388,8 @@ class OrderRepositoryImpl(
 
     private companion object {
 
-        const val HISTORY_PAGE_SIZE = 20
+        const val ORDERS_PAGE_SIZE = 20
+        const val HISTORY_PAGE_SIZE = ORDERS_PAGE_SIZE
 
         val CURRENT_ORDER_STATUSES = listOf(
             OrderStatus.Created,
@@ -273,10 +400,25 @@ class OrderRepositoryImpl(
             OrderStatus.Denied,
         ).map { OrderStatusEntity.valueOf(it.name) }
 
-        val HISTORY_ORDER_STATUSES = listOf(
+        val NEW_ORDER_STATUSES = listOf(
+            OrderStatus.Created,
+        ).map { OrderStatusEntity.valueOf(it.name) }
+
+        val PROCESSING_ORDER_STATUSES = listOf(
+            OrderStatus.Processing,
+            OrderStatus.Sent,
+        ).map { OrderStatusEntity.valueOf(it.name) }
+
+        val NOMAD_HISTORY_ORDER_STATUSES = listOf(
             OrderStatus.Created,
             OrderStatus.Processing,
             OrderStatus.Sent,
+            OrderStatus.Completed,
+            OrderStatus.Cancelled,
+            OrderStatus.Denied,
+        ).map { OrderStatusEntity.valueOf(it.name) }
+
+        val TRADING_STATION_HISTORY_ORDER_STATUSES = listOf(
             OrderStatus.Completed,
             OrderStatus.Cancelled,
             OrderStatus.Denied,

@@ -153,4 +153,12 @@ interface OrdersDao {
         """,
     )
     fun getOrdersByStatusesPaged(statuses: List<OrderStatusEntity>): PagingSource<Int, OrderWithDetails>
+
+    @Query(
+        """
+        SELECT COUNT(*) FROM $DB_ORDER_TABLE_NAME
+        WHERE $DB_ORDER_COL_STATUS IN (:statuses)
+        """,
+    )
+    fun getOrderCountByStatuses(statuses: List<OrderStatusEntity>): Flow<Int>
 }

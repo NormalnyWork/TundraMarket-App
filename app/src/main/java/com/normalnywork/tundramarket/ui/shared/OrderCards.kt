@@ -1,5 +1,6 @@
 package com.normalnywork.tundramarket.ui.shared
 
+import android.text.format.DateUtils
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -77,6 +78,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.days
 
 @Composable
 fun HistoryOrderCard(
@@ -533,22 +535,32 @@ private fun OrderStatus.toStatusHistoryIconColors(isLatest: Boolean): StatusHist
     }
 }
 
+private const val TODAY_TIME_PATTERN = "H:mm"
+private const val YEAR_DATE_TIME_PATTERN = "dd.MM.yyyy, H:mm"
+private const val DATE_TIME_PATTERN = "dd.MM, H:mm"
+
 @Composable
 private fun Long.toStatusHistoryTime(): String {
+    val isToday = DateUtils.isToday(this)
+    val isYesterday = DateUtils.isToday(this + 1.days.inWholeMilliseconds)
+
     val calendar = Calendar.getInstance()
     val itemCalendar = Calendar.getInstance().apply {
         timeInMillis = this@toStatusHistoryTime
     }
-    val isToday = calendar.get(Calendar.YEAR) == itemCalendar.get(Calendar.YEAR) &&
-        calendar.get(Calendar.DAY_OF_YEAR) == itemCalendar.get(Calendar.DAY_OF_YEAR)
-    val pattern = if (isToday) TODAY_TIME_PATTERN else DATE_TIME_PATTERN
+
+    val pattern = when {
+        isToday || isYesterday -> TODAY_TIME_PATTERN
+        calendar.get(Calendar.YEAR) == itemCalendar.get(Calendar.YEAR) -> DATE_TIME_PATTERN
+        else -> YEAR_DATE_TIME_PATTERN
+    }
     val formattedTime = SimpleDateFormat(pattern, LocalLocale.current.platformLocale)
         .format(Date(this))
 
-    return if (isToday) {
-        stringResource(R.string.nomad_main_status_history_today_time, formattedTime)
-    } else {
-        formattedTime
+    return when {
+        isToday -> stringResource(R.string.nomad_main_status_history_today_time, formattedTime)
+        isYesterday -> stringResource(R.string.nomad_main_status_history_yesterday_time, formattedTime)
+        else -> formattedTime
     }
 }
 
@@ -566,9 +578,6 @@ private object StatusHistoryTokens {
     val DashLength = 2.dp
     val DashGap = 2.dp
 }
-
-private const val TODAY_TIME_PATTERN = "H:mm"
-private const val DATE_TIME_PATTERN = "dd.MM.yyyy, H:mm"
 
 @Composable
 fun OrderDetailsCard(

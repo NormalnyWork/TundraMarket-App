@@ -12,10 +12,12 @@ import com.normalnywork.tundramarket.data.remote.api.proto.CreateOrderResponse
 import com.normalnywork.tundramarket.data.remote.api.proto.OrderListRequest
 import com.normalnywork.tundramarket.data.remote.api.proto.OrderListResponse
 import com.normalnywork.tundramarket.data.remote.api.proto.OrderResponse
+import com.normalnywork.tundramarket.data.remote.api.proto.OrderUpdatesRequest
 import com.normalnywork.tundramarket.data.remote.api.proto.ProtoOrderCategory
 import com.normalnywork.tundramarket.data.remote.api.schema.Order
 import com.normalnywork.tundramarket.data.remote.api.schema.User
 import com.normalnywork.tundramarket.domain.entities.OrderStatus
+import com.normalnywork.tundramarket.domain.entities.TradingStationOrdersPage
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.resources.get
@@ -84,6 +86,40 @@ class KtorRemoteOrdersDataSource(
         anchor: Int?,
         pageSize: Int,
     ): RemoteOrdersDataSource.OrderListPage {
+        return getOrders(
+            anchor = anchor,
+            pageSize = pageSize,
+            orderCategory = ProtoOrderCategory.HISTORY,
+        )
+    }
+
+    override suspend fun getTradingStationOrders(
+        page: TradingStationOrdersPage,
+        anchor: Int?,
+        pageSize: Int,
+    ): RemoteOrdersDataSource.OrderListPage {
+        return getOrders(
+            anchor = anchor,
+            pageSize = pageSize,
+            orderCategory = page.toOrderCategory(),
+        )
+    }
+
+    override suspend fun getOrderUpdates(lastUpdated: Long): RemoteOrdersDataSource.OrderListPage {
+        return httpClient
+            .post(Order.Updates()) {
+                contentType(ContentType.Application.ProtoBuf)
+                setBody(OrderUpdatesRequest(lastUpdated = lastUpdated))
+            }
+            .body<OrderListResponse>()
+            .toOrderListPage()
+    }
+
+    private suspend fun getOrders(
+        anchor: Int?,
+        pageSize: Int,
+        orderCategory: ProtoOrderCategory,
+    ): RemoteOrdersDataSource.OrderListPage {
         return httpClient
             .post(Order.List()) {
                 contentType(ContentType.Application.ProtoBuf)
@@ -91,12 +127,18 @@ class KtorRemoteOrdersDataSource(
                     OrderListRequest(
                         anchor = anchor,
                         pageSize = pageSize,
-                        orderCategory = ProtoOrderCategory.HISTORY,
+                        orderCategory = orderCategory,
                     ),
                 )
             }
             .body<OrderListResponse>()
             .toOrderListPage()
+    }
+
+    private fun TradingStationOrdersPage.toOrderCategory() = when (this) {
+        TradingStationOrdersPage.Active -> ProtoOrderCategory.PROCESSING
+        TradingStationOrdersPage.New -> ProtoOrderCategory.NEW
+        TradingStationOrdersPage.History -> ProtoOrderCategory.HISTORY
     }
 
     private companion object {

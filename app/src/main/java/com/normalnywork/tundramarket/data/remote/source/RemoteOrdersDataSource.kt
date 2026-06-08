@@ -4,6 +4,7 @@ import com.normalnywork.tundramarket.domain.entities.Location
 import com.normalnywork.tundramarket.domain.entities.Order
 import com.normalnywork.tundramarket.domain.entities.OrderStatus
 import com.normalnywork.tundramarket.domain.entities.OrderStatusHistory
+import com.normalnywork.tundramarket.domain.entities.TradingStationOrdersPage
 
 interface RemoteOrdersDataSource {
 
@@ -26,6 +27,14 @@ interface RemoteOrdersDataSource {
         anchor: Int?,
         pageSize: Int,
     ): OrderListPage
+
+    suspend fun getTradingStationOrders(
+        page: TradingStationOrdersPage,
+        anchor: Int?,
+        pageSize: Int,
+    ): OrderListPage
+
+    suspend fun getOrderUpdates(lastUpdated: Long): OrderListPage
 
     data class OrderStatusUpdates(
         val orderId: Int,
