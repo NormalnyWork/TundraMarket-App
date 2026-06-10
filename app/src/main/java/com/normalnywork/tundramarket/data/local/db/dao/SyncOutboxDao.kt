@@ -22,6 +22,9 @@ interface SyncOutboxDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(operation: SyncOutboxEntity)
 
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertIgnore(operation: SyncOutboxEntity)
+
     @Query(
         """
         SELECT * FROM $DB_SYNC_OUTBOX_TABLE_NAME

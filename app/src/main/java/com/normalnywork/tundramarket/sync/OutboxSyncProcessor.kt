@@ -13,6 +13,8 @@ import com.normalnywork.tundramarket.data.local.db.entities.SyncOutboxStatusEnti
 import com.normalnywork.tundramarket.data.local.db.mappers.toDomain
 import com.normalnywork.tundramarket.data.local.preferences.OrderHistorySyncStore
 import com.normalnywork.tundramarket.data.remote.source.RemoteOrdersDataSource
+import com.normalnywork.tundramarket.domain.repositories.ConfigRepository
+import com.normalnywork.tundramarket.domain.repositories.ProductRepository
 import com.normalnywork.tundramarket.utils.NetworkStatusObserver
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ResponseException
@@ -28,6 +30,8 @@ class OutboxSyncProcessor(
     private val ordersDao: OrdersDao,
     private val syncOutboxDao: SyncOutboxDao,
     private val remoteOrdersDataSource: RemoteOrdersDataSource,
+    private val productRepository: ProductRepository,
+    private val configRepository: ConfigRepository,
     private val orderHistorySyncStore: OrderHistorySyncStore,
     private val networkStatusObserver: NetworkStatusObserver,
 ) {
@@ -110,6 +114,8 @@ class OutboxSyncProcessor(
         return when (operation.operationType) {
             SyncOperationTypeEntity.CreateOrder -> syncCreateOrder(operation)
             SyncOperationTypeEntity.ChangeOrderStatus -> syncChangeOrderStatus(operation)
+            SyncOperationTypeEntity.UpdateCatalog -> syncUpdateCatalog(operation)
+            SyncOperationTypeEntity.UpdateTradingStations -> syncUpdateTradingStations(operation)
         }
     }
 
@@ -190,6 +196,42 @@ class OutboxSyncProcessor(
                     )
                     syncOutboxDao.delete(operation)
                 }
+                OperationResult.Success
+            },
+            onFailure = { error ->
+                markFailed(
+                    operation = operation,
+                    error = error,
+                    retryWork = error.shouldRetryWork(),
+                )
+            },
+        )
+    }
+
+    private suspend fun syncUpdateCatalog(operation: SyncOutboxEntity): OperationResult {
+        return runCatching {
+            productRepository.updateCatalog()
+        }.fold(
+            onSuccess = {
+                syncOutboxDao.delete(operation)
+                OperationResult.Success
+            },
+            onFailure = { error ->
+                markFailed(
+                    operation = operation,
+                    error = error,
+                    retryWork = error.shouldRetryWork(),
+                )
+            },
+        )
+    }
+
+    private suspend fun syncUpdateTradingStations(operation: SyncOutboxEntity): OperationResult {
+        return runCatching {
+            configRepository.updateTradingStations()
+        }.fold(
+            onSuccess = {
+                syncOutboxDao.delete(operation)
                 OperationResult.Success
             },
             onFailure = { error ->
@@ -293,6 +335,9 @@ class OutboxSyncProcessor(
                         localOrderId = operation.localEntityId,
                         networkStatus = OrderNetworkStatusEntity.Updating,
                     )
+                    SyncOperationTypeEntity.UpdateCatalog,
+                    SyncOperationTypeEntity.UpdateTradingStations,
+                    -> Unit
                 }
             }
             syncOutboxDao.resetRunningOperations()
@@ -352,11 +397,18 @@ class OutboxSyncProcessor(
     }
 
     private suspend fun updateOrderWaitingForNetwork(operation: SyncOutboxEntity) {
+        if (!operation.operationType.isOrderOperation()) {
+            return
+        }
+
         ordersDao.updateNetworkStatus(
             localOrderId = operation.localEntityId,
             networkStatus = when (operation.operationType) {
                 SyncOperationTypeEntity.CreateOrder -> OrderNetworkStatusEntity.Failed
                 SyncOperationTypeEntity.ChangeOrderStatus -> OrderNetworkStatusEntity.UpdateFailed
+                SyncOperationTypeEntity.UpdateCatalog,
+                SyncOperationTypeEntity.UpdateTradingStations,
+                -> error("Catalog refresh operations do not have order network status")
             },
         )
     }
@@ -382,13 +434,7 @@ class OutboxSyncProcessor(
         retryWork: Boolean,
     ): OperationResult {
         database.withTransaction {
-            ordersDao.updateNetworkStatus(
-                localOrderId = operation.localEntityId,
-                networkStatus = when (operation.operationType) {
-                    SyncOperationTypeEntity.CreateOrder -> OrderNetworkStatusEntity.Failed
-                    SyncOperationTypeEntity.ChangeOrderStatus -> OrderNetworkStatusEntity.UpdateFailed
-                },
-            )
+            updateOrderWaitingForNetwork(operation)
             syncOutboxDao.markFailed(
                 operationId = operation.id,
                 nextAttemptAt = System.currentTimeMillis(),
@@ -408,6 +454,17 @@ class OutboxSyncProcessor(
             is ClientRequestException -> response.status == HttpStatusCode.TooManyRequests
             is ResponseException -> response.status.value >= HTTP_SERVER_ERROR_MIN
             else -> false
+        }
+    }
+
+    private fun SyncOperationTypeEntity.isOrderOperation(): Boolean {
+        return when (this) {
+            SyncOperationTypeEntity.CreateOrder,
+            SyncOperationTypeEntity.ChangeOrderStatus,
+            -> true
+            SyncOperationTypeEntity.UpdateCatalog,
+            SyncOperationTypeEntity.UpdateTradingStations,
+            -> false
         }
     }
 

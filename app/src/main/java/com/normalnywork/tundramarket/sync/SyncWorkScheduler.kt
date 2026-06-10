@@ -2,12 +2,15 @@ package com.normalnywork.tundramarket.sync
 
 import android.content.Context
 import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import org.koin.core.annotation.Singleton
+import java.util.concurrent.TimeUnit
 
 @Singleton
 class SyncWorkScheduler(context: Context) {
@@ -53,9 +56,24 @@ class SyncWorkScheduler(context: Context) {
         )
     }
 
+    fun scheduleWeeklyCatalogUpdates() {
+        val request = PeriodicWorkRequestBuilder<WeeklyCatalogUpdateWorker>(
+            repeatInterval = CATALOG_UPDATE_INTERVAL_DAYS,
+            repeatIntervalTimeUnit = TimeUnit.DAYS,
+        ).build()
+
+        workManager.enqueueUniquePeriodicWork(
+            WEEKLY_CATALOG_UPDATE_WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            request,
+        )
+    }
+
     companion object {
 
         private const val IMMEDIATE_SYNC_WORK_NAME = "sync-outbox-immediate"
         private const val CONNECTED_SYNC_WORK_NAME = "sync-outbox-connected"
+        private const val WEEKLY_CATALOG_UPDATE_WORK_NAME = "weekly-catalog-update"
+        private const val CATALOG_UPDATE_INTERVAL_DAYS = 7L
     }
 }
