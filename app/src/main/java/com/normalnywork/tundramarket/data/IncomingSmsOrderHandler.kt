@@ -38,7 +38,10 @@ class IncomingSmsOrderHandler(
         senderPhone: String?,
         message: String,
     ) {
-        val nomadPhone = senderPhone?.takeIf { it.isNotBlank() } ?: return
+        val nomadPhone = senderPhone
+            ?.filter { it.isDigit() }
+            ?.replaceFirstChar { "7" }
+            ?.takeIf { it.isNotBlank() } ?: return
         if (!TmSmsOrderCodecs.isEncodedOrderMessage(message)) return
 
         val smsOrder = when (val decodeResult = TmSmsOrderCodecs.decode(message)) {
