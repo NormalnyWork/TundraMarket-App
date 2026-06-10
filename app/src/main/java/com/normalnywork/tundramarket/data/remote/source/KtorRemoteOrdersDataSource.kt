@@ -5,19 +5,23 @@ import com.normalnywork.tundramarket.data.remote.api.mappers.toCreateRequest
 import com.normalnywork.tundramarket.data.remote.api.mappers.toOrderListItem
 import com.normalnywork.tundramarket.data.remote.api.mappers.toOrderListPage
 import com.normalnywork.tundramarket.data.remote.api.mappers.toOrderStatusUpdates
+import com.normalnywork.tundramarket.data.remote.api.mappers.toProto
 import com.normalnywork.tundramarket.data.remote.api.mappers.unixMillisecondsToSeconds
 import com.normalnywork.tundramarket.data.remote.api.mappers.unixSecondsToMilliseconds
 import com.normalnywork.tundramarket.data.remote.api.proto.ChangeOrderStatusResponse
 import com.normalnywork.tundramarket.data.remote.api.proto.CheckOrderStatusRequest
 import com.normalnywork.tundramarket.data.remote.api.proto.CheckOrderStatusResponse
 import com.normalnywork.tundramarket.data.remote.api.proto.CreateOrderResponse
+import com.normalnywork.tundramarket.data.remote.api.proto.OrderCreateForNomadIn
 import com.normalnywork.tundramarket.data.remote.api.proto.OrderListRequest
 import com.normalnywork.tundramarket.data.remote.api.proto.OrderListResponse
 import com.normalnywork.tundramarket.data.remote.api.proto.OrderResponse
 import com.normalnywork.tundramarket.data.remote.api.proto.OrderUpdatesRequest
 import com.normalnywork.tundramarket.data.remote.api.proto.ProtoOrderCategory
+import com.normalnywork.tundramarket.data.remote.api.proto.ProtoProductCount
 import com.normalnywork.tundramarket.data.remote.api.schema.Order
 import com.normalnywork.tundramarket.data.remote.api.schema.User
+import com.normalnywork.tundramarket.domain.entities.Location
 import com.normalnywork.tundramarket.domain.entities.OrderStatus
 import com.normalnywork.tundramarket.domain.entities.TradingStationOrdersPage
 import io.ktor.client.HttpClient
@@ -45,6 +49,36 @@ class KtorRemoteOrdersDataSource(
                 contentType(ContentType.Application.ProtoBuf)
                 header(IDEMPOTENCY_KEY_HEADER, idempotencyKey)
                 setBody(order.toCreateRequest())
+            }
+            .body<CreateOrderResponse>()
+
+        return response.orderId
+    }
+
+    override suspend fun createOrderForNomad(
+        nomadPhone: String,
+        location: Location,
+        products: List<RemoteOrdersDataSource.ProductCount>,
+        comment: String?,
+        idempotencyKey: String,
+    ): Int {
+        val response = httpClient
+            .post(Order.CreateForNomad()) {
+                contentType(ContentType.Application.ProtoBuf)
+                header(IDEMPOTENCY_KEY_HEADER, idempotencyKey)
+                setBody(
+                    OrderCreateForNomadIn(
+                        nomadPhone = nomadPhone,
+                        location = listOf(location.toProto()),
+                        products = products.map { product ->
+                            ProtoProductCount(
+                                productId = product.productId,
+                                count = product.count,
+                            )
+                        },
+                        comment = comment,
+                    ),
+                )
             }
             .body<CreateOrderResponse>()
 

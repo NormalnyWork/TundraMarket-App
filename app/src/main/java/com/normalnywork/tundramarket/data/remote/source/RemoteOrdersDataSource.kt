@@ -13,6 +13,14 @@ interface RemoteOrdersDataSource {
         idempotencyKey: String,
     ): Int
 
+    suspend fun createOrderForNomad(
+        nomadPhone: String,
+        location: Location,
+        products: List<ProductCount>,
+        comment: String?,
+        idempotencyKey: String,
+    ): Int
+
     suspend fun changeOrderStatus(
         orderId: Int,
         status: OrderStatus,

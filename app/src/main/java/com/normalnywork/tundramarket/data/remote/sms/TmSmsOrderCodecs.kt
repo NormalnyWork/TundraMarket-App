@@ -12,6 +12,16 @@ object TmSmsOrderCodecs {
         return actualCodec.encode(order)
     }
 
+    fun decode(message: String): TmSmsOrderDecodeResult {
+        val routingResult = route(message)
+        if (routingResult.errors.isNotEmpty()) {
+            return TmSmsOrderDecodeResult.Failure(routingResult.errors)
+        }
+
+        return routingResult.codec?.decode(message)
+            ?: TmSmsOrderDecodeResult.Failure(listOf(TmSmsOrderValidationError.UnsupportedVersion))
+    }
+
     fun calculateSmsLength(order: TmSmsOrder): TmSmsOrderLengthResult {
         return actualCodec.calculateSmsLength(order)
     }

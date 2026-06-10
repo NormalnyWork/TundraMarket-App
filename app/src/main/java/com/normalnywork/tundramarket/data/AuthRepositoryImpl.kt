@@ -24,6 +24,7 @@ class AuthRepositoryImpl(
         )
         authTokenStore.saveToken(token)
         userSessionStore.saveIsLoggedIn(true)
+        userSessionStore.setTradingStationId(tradingStationId)
     }
 
     override suspend fun isLoggedIn() = userSessionStore.isLoggedIn()

@@ -11,4 +11,8 @@ interface UserSessionStore {
     suspend fun getUserRole(): UserRole?
 
     suspend fun setUserRole(role: UserRole)
+
+    suspend fun getTradingStationId(): Int?
+
+    suspend fun setTradingStationId(id: Int?)
 }

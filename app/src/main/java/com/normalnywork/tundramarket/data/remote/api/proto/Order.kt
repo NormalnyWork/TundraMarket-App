@@ -38,6 +38,14 @@ data class CreateOrderResponse(
 )
 
 @Serializable
+data class OrderCreateForNomadIn(
+    @ProtoNumber(1) val nomadPhone: String,
+    @ProtoNumber(2) val location: List<ProtoLocation>,
+    @ProtoNumber(3) val products: List<ProtoProductCount>,
+    @ProtoNumber(4) val comment: String? = null,
+)
+
+@Serializable
 data class CheckOrderStatusRequest(
     @ProtoNumber(1) val lastUpdated: Long,
 )

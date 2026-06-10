@@ -12,6 +12,10 @@ class Order {
     class Create(val parent: Order = Order())
 
     @Serializable
+    @Resource("create-for-nomad")
+    class CreateForNomad(val parent: Order = Order())
+
+    @Serializable
     @Resource("change-status")
     class ChangeStatus(val parent: Order = Order())
 

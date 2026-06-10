@@ -23,7 +23,7 @@ interface SyncOutboxDao {
     suspend fun insert(operation: SyncOutboxEntity)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertIgnore(operation: SyncOutboxEntity)
+    suspend fun insertIgnore(operation: SyncOutboxEntity): Long
 
     @Query(
         """

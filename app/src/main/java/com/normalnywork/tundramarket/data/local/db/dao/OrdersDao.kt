@@ -158,6 +158,12 @@ interface OrdersDao {
     @Query("DELETE FROM $DB_ORDER_PRODUCT_TABLE_NAME WHERE $DB_ORDER_PRODUCT_COL_ORDER_ID = :localOrderId")
     suspend fun deleteOrderProducts(localOrderId: Int)
 
+    @Query("DELETE FROM $DB_ORDER_TABLE_NAME WHERE $DB_ORDER_COL_ID = :localOrderId")
+    suspend fun deleteOrder(localOrderId: Int)
+
+    @Query("SELECT * FROM $DB_ORDER_PRODUCT_TABLE_NAME WHERE $DB_ORDER_PRODUCT_COL_ORDER_ID = :localOrderId")
+    suspend fun getOrderProducts(localOrderId: Int): List<OrderProductEntity>
+
     @Query(
         """
         SELECT $DB_ORDER_PRODUCT_COL_PRODUCT_ID FROM $DB_ORDER_PRODUCT_TABLE_NAME

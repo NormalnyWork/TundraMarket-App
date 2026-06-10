@@ -113,6 +113,7 @@ class OutboxSyncProcessor(
 
         return when (operation.operationType) {
             SyncOperationTypeEntity.CreateOrder -> syncCreateOrder(operation)
+            SyncOperationTypeEntity.CreateOrderForNomad -> syncCreateOrderForNomad(operation)
             SyncOperationTypeEntity.ChangeOrderStatus -> syncChangeOrderStatus(operation)
             SyncOperationTypeEntity.UpdateCatalog -> syncUpdateCatalog(operation)
             SyncOperationTypeEntity.UpdateTradingStations -> syncUpdateTradingStations(operation)
@@ -141,6 +142,60 @@ class OutboxSyncProcessor(
         return runCatching {
             remoteOrdersDataSource.createOrder(
                 order = order.toDomain(),
+                idempotencyKey = operation.idempotencyKey,
+            )
+        }.fold(
+            onSuccess = { serverOrderId ->
+                database.withTransaction {
+                    val existingOrder = ordersDao.getOrderByServerId(serverOrderId)
+                    if (existingOrder != null && existingOrder.order.id != operation.localEntityId) {
+                        deleteLocalOrder(operation.localEntityId)
+                    } else {
+                        ordersDao.markOrderSynced(
+                            localOrderId = operation.localEntityId,
+                            serverOrderId = serverOrderId,
+                        )
+                    }
+                    syncOutboxDao.delete(operation)
+                }
+                OperationResult.Success
+            },
+            onFailure = { error ->
+                markFailed(
+                    operation = operation,
+                    error = error,
+                    retryWork = error.shouldRetryWork(),
+                )
+            },
+        )
+    }
+
+    private suspend fun syncCreateOrderForNomad(operation: SyncOutboxEntity): OperationResult {
+        val order = ordersDao.getOrderByLocalId(operation.localEntityId)
+            ?: return completeMissingLocalOrder(operation)
+        val nomadPhone = operation.comment
+            ?: return markFailed(
+                operation = operation,
+                error = IllegalStateException("SMS order does not have nomad phone"),
+                retryWork = false,
+            )
+
+        ordersDao.updateNetworkStatus(
+            localOrderId = operation.localEntityId,
+            networkStatus = OrderNetworkStatusEntity.Loading,
+        )
+
+        return runCatching {
+            remoteOrdersDataSource.createOrderForNomad(
+                nomadPhone = nomadPhone,
+                location = order.order.location.toDomain(),
+                products = ordersDao.getOrderProducts(operation.localEntityId).map { product ->
+                    RemoteOrdersDataSource.ProductCount(
+                        productId = product.productId,
+                        count = product.count,
+                    )
+                },
+                comment = order.order.comment.takeIf { it.isNotBlank() },
                 idempotencyKey = operation.idempotencyKey,
             )
         }.fold(
@@ -323,10 +378,17 @@ class OutboxSyncProcessor(
         return OperationResult.Success
     }
 
+    private suspend fun deleteLocalOrder(localOrderId: Int) {
+        ordersDao.deleteOrderProducts(localOrderId)
+        ordersDao.deleteStatusHistory(localOrderId)
+        ordersDao.deleteOrder(localOrderId)
+    }
+
     private suspend fun resetStaleRunningOperations() {
         database.withTransaction {
             syncOutboxDao.getRunningOperations().forEach { operation ->
                 when (operation.operationType) {
+                    SyncOperationTypeEntity.CreateOrderForNomad,
                     SyncOperationTypeEntity.CreateOrder -> ordersDao.updateNetworkStatus(
                         localOrderId = operation.localEntityId,
                         networkStatus = OrderNetworkStatusEntity.Loading,
@@ -404,6 +466,7 @@ class OutboxSyncProcessor(
         ordersDao.updateNetworkStatus(
             localOrderId = operation.localEntityId,
             networkStatus = when (operation.operationType) {
+                SyncOperationTypeEntity.CreateOrderForNomad,
                 SyncOperationTypeEntity.CreateOrder -> OrderNetworkStatusEntity.Failed
                 SyncOperationTypeEntity.ChangeOrderStatus -> OrderNetworkStatusEntity.UpdateFailed
                 SyncOperationTypeEntity.UpdateCatalog,
@@ -459,6 +522,7 @@ class OutboxSyncProcessor(
 
     private fun SyncOperationTypeEntity.isOrderOperation(): Boolean {
         return when (this) {
+            SyncOperationTypeEntity.CreateOrderForNomad,
             SyncOperationTypeEntity.CreateOrder,
             SyncOperationTypeEntity.ChangeOrderStatus,
             -> true
