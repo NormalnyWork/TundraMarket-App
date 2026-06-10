@@ -4,13 +4,17 @@ import androidx.room.withTransaction
 import com.normalnywork.tundramarket.data.local.db.TMDatabase
 import com.normalnywork.tundramarket.data.local.db.dao.OrdersDao
 import com.normalnywork.tundramarket.data.local.db.dao.SyncOutboxDao
+import com.normalnywork.tundramarket.data.local.db.dao.TradingStationsDao
+import com.normalnywork.tundramarket.data.local.db.entities.OrderEntity
 import com.normalnywork.tundramarket.data.local.db.entities.OrderNetworkStatusEntity
+import com.normalnywork.tundramarket.data.local.db.entities.OrderProductEntity
 import com.normalnywork.tundramarket.data.local.db.entities.OrderStatusEntity
 import com.normalnywork.tundramarket.data.local.db.entities.OrderStatusHistoryEntity
 import com.normalnywork.tundramarket.data.local.db.entities.SyncOperationTypeEntity
 import com.normalnywork.tundramarket.data.local.db.entities.SyncOutboxEntity
 import com.normalnywork.tundramarket.data.local.db.entities.SyncOutboxStatusEntity
 import com.normalnywork.tundramarket.data.local.db.mappers.toDomain
+import com.normalnywork.tundramarket.data.local.db.mappers.toEntity
 import com.normalnywork.tundramarket.data.local.preferences.OrderHistorySyncStore
 import com.normalnywork.tundramarket.data.remote.source.RemoteOrdersDataSource
 import com.normalnywork.tundramarket.domain.repositories.ConfigRepository
@@ -29,6 +33,7 @@ class OutboxSyncProcessor(
     private val database: TMDatabase,
     private val ordersDao: OrdersDao,
     private val syncOutboxDao: SyncOutboxDao,
+    private val tradingStationsDao: TradingStationsDao,
     private val remoteOrdersDataSource: RemoteOrdersDataSource,
     private val productRepository: ProductRepository,
     private val configRepository: ConfigRepository,
@@ -301,7 +306,11 @@ class OutboxSyncProcessor(
 
     private suspend fun syncCurrentOrderStatus(retryWhenWaitingForNetwork: Boolean): OperationResult {
         val order = ordersDao.getLatestOrderByStatusesOnce(ACTIVE_ORDER_STATUSES) ?: return OperationResult.Success
-        val serverOrderId = order.order.serverId ?: return OperationResult.Success
+        val serverOrderId = order.order.serverId
+            ?: return syncCurrentOrderWithoutServerId(
+                localOrderId = order.order.id,
+                retryWhenWaitingForNetwork = retryWhenWaitingForNetwork,
+            )
         val localOrderId = order.order.id
         val lastUpdated = orderHistorySyncStore.getCurrentOrderStatusLastUpdated(serverOrderId)
         val existingStatuses = order.statusHistory.map { it.status.name }.toSet()
@@ -368,6 +377,110 @@ class OutboxSyncProcessor(
                 markCurrentOrderStatusFailed(
                     localOrderId = localOrderId,
                     retryWork = error.shouldRetryWork(),
+                )
+            },
+        )
+    }
+
+    private suspend fun syncCurrentOrderWithoutServerId(
+        localOrderId: Int,
+        retryWhenWaitingForNetwork: Boolean,
+    ): OperationResult {
+        if (!retryWhenWaitingForNetwork && !networkStatusObserver.isConnected()) {
+            markCurrentOrderStatusWaitingForNetwork(localOrderId)
+            return OperationResult(
+                success = false,
+                retryWork = retryWhenWaitingForNetwork,
+            )
+        }
+
+        ordersDao.updateNetworkStatus(
+            localOrderId = localOrderId,
+            networkStatus = OrderNetworkStatusEntity.Updating,
+        )
+
+        return runCatching {
+            remoteOrdersDataSource.getCurrentOrder()
+        }.fold(
+            onSuccess = { remoteOrder ->
+                database.withTransaction {
+                    if (remoteOrder != null) {
+                        mergeRemoteCurrentOrder(
+                            localOrderId = localOrderId,
+                            remoteOrder = remoteOrder,
+                        )
+                    } else {
+                        ordersDao.updateNetworkStatus(
+                            localOrderId = localOrderId,
+                            networkStatus = null,
+                        )
+                    }
+                }
+
+                val remoteLastUpdated = remoteOrder?.statusHistory?.maxOfOrNull { it.time }
+                if (remoteOrder != null && remoteLastUpdated != null) {
+                    orderHistorySyncStore.setCurrentOrderStatusLastUpdated(
+                        orderId = remoteOrder.id,
+                        lastUpdated = remoteLastUpdated,
+                    )
+                }
+
+                OperationResult.Success
+            },
+            onFailure = { error ->
+                markCurrentOrderStatusFailed(
+                    localOrderId = localOrderId,
+                    retryWork = error.shouldRetryWork(),
+                )
+            },
+        )
+    }
+
+    private suspend fun mergeRemoteCurrentOrder(
+        localOrderId: Int,
+        remoteOrder: RemoteOrdersDataSource.OrderListItem,
+    ) {
+        val tradingStation = tradingStationsDao.getTradingStationById(remoteOrder.tradingStationId)
+            ?: error("Trading station ${remoteOrder.tradingStationId} is not cached")
+        val existingRemoteOrder = ordersDao.getOrderByServerId(remoteOrder.id)?.order
+        val targetOrderId = existingRemoteOrder?.id ?: localOrderId
+        val targetOrder = existingRemoteOrder ?: ordersDao.getOrderByLocalId(localOrderId)?.order ?: return
+
+        if (existingRemoteOrder != null && existingRemoteOrder.id != localOrderId) {
+            deleteLocalOrder(localOrderId)
+        }
+
+        ordersDao.updateOrder(
+            OrderEntity(
+                id = targetOrderId,
+                serverId = remoteOrder.id,
+                nomadId = remoteOrder.nomadId,
+                tradingStationId = tradingStation.id,
+                location = remoteOrder.location.toEntity(),
+                comment = remoteOrder.comment,
+                status = OrderStatusEntity.valueOf(remoteOrder.status.name),
+                networkStatus = null,
+                createdAt = targetOrder.createdAt,
+            ),
+        )
+        ordersDao.deleteOrderProducts(targetOrderId)
+        ordersDao.deleteStatusHistory(targetOrderId)
+        ordersDao.insertOrderProducts(
+            remoteOrder.cart.map { productCount ->
+                OrderProductEntity(
+                    orderId = targetOrderId,
+                    productId = productCount.productId,
+                    count = productCount.count,
+                )
+            },
+        )
+        ordersDao.insertStatusHistory(
+            remoteOrder.statusHistory.map { history ->
+                OrderStatusHistoryEntity(
+                    orderId = targetOrderId,
+                    status = OrderStatusEntity.valueOf(history.status.name),
+                    time = history.time,
+                    comment = history.comment,
                 )
             },
         )

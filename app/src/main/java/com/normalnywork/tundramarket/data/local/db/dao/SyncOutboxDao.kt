@@ -11,8 +11,10 @@ import com.normalnywork.tundramarket.data.local.db.entities.DB_SYNC_OUTBOX_COL_I
 import com.normalnywork.tundramarket.data.local.db.entities.DB_SYNC_OUTBOX_COL_LAST_ERROR
 import com.normalnywork.tundramarket.data.local.db.entities.DB_SYNC_OUTBOX_COL_LOCAL_ENTITY_ID
 import com.normalnywork.tundramarket.data.local.db.entities.DB_SYNC_OUTBOX_COL_NEXT_ATTEMPT_AT
+import com.normalnywork.tundramarket.data.local.db.entities.DB_SYNC_OUTBOX_COL_OPERATION_TYPE
 import com.normalnywork.tundramarket.data.local.db.entities.DB_SYNC_OUTBOX_COL_STATUS
 import com.normalnywork.tundramarket.data.local.db.entities.DB_SYNC_OUTBOX_TABLE_NAME
+import com.normalnywork.tundramarket.data.local.db.entities.SyncOperationTypeEntity
 import com.normalnywork.tundramarket.data.local.db.entities.SyncOutboxEntity
 import com.normalnywork.tundramarket.data.local.db.entities.SyncOutboxStatusEntity
 
@@ -119,6 +121,18 @@ interface SyncOutboxDao {
         """,
     )
     suspend fun deleteByLocalEntityId(localEntityId: Int)
+
+    @Query(
+        """
+        DELETE FROM $DB_SYNC_OUTBOX_TABLE_NAME
+        WHERE $DB_SYNC_OUTBOX_COL_LOCAL_ENTITY_ID = :localEntityId
+            AND $DB_SYNC_OUTBOX_COL_OPERATION_TYPE = :operationType
+        """,
+    )
+    suspend fun deleteByLocalEntityIdAndOperationType(
+        localEntityId: Int,
+        operationType: SyncOperationTypeEntity,
+    )
 
     @Delete
     suspend fun delete(operation: SyncOutboxEntity)

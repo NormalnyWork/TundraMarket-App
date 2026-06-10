@@ -191,10 +191,26 @@ class OrderRepositoryImpl(
             message = message,
         )
 
-        ordersDao.updateNetworkStatus(
-            localOrderId = localOrderId,
-            networkStatus = if (isSent) null else OrderNetworkStatusEntity.SmsFailed,
-        )
+        database.withTransaction {
+            ordersDao.updateNetworkStatus(
+                localOrderId = localOrderId,
+                networkStatus = if (isSent) null else OrderNetworkStatusEntity.SmsFailed,
+            )
+
+            if (isSent) {
+                syncOutboxDao.deleteByLocalEntityIdAndOperationType(
+                    localEntityId = localOrderId,
+                    operationType = SyncOperationTypeEntity.CreateOrder,
+                )
+            }
+        }
+
+        if (isSent) {
+            syncWorkScheduler.schedule(
+                replace = true,
+                syncCurrentOrderStatus = true,
+            )
+        }
     }
 
     override fun getOrderSmsSendState(order: Order): OrderSmsSendState {
