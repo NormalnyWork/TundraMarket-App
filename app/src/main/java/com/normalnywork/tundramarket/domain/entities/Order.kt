@@ -13,5 +13,6 @@ data class Order(
     val status: OrderStatus,
     val statusHistory: List<OrderStatusHistory>,
     val networkStatus: OrderNetworkStatus? = null,
+    val isCreatedViaSms: Boolean = false,
     val assembledProductIds: Set<Int> = emptySet(),
 )

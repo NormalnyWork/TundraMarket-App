@@ -10,6 +10,7 @@ import androidx.room.Update
 import com.normalnywork.tundramarket.data.local.db.entities.DB_ORDER_COL_COMMENT
 import com.normalnywork.tundramarket.data.local.db.entities.DB_ORDER_COL_CREATED_AT
 import com.normalnywork.tundramarket.data.local.db.entities.DB_ORDER_COL_ID
+import com.normalnywork.tundramarket.data.local.db.entities.DB_ORDER_COL_IS_CREATED_VIA_SMS
 import com.normalnywork.tundramarket.data.local.db.entities.DB_ORDER_COL_NETWORK_STATUS
 import com.normalnywork.tundramarket.data.local.db.entities.DB_ORDER_COL_SERVER_ID
 import com.normalnywork.tundramarket.data.local.db.entities.DB_ORDER_COL_STATUS
@@ -140,6 +141,16 @@ interface OrdersDao {
         localOrderId: Int,
         networkStatus: OrderNetworkStatusEntity?,
     )
+
+    @Query(
+        """
+        UPDATE $DB_ORDER_TABLE_NAME
+        SET $DB_ORDER_COL_NETWORK_STATUS = NULL,
+            $DB_ORDER_COL_IS_CREATED_VIA_SMS = 1
+        WHERE $DB_ORDER_COL_ID = :localOrderId
+        """,
+    )
+    suspend fun markCreatedViaSms(localOrderId: Int)
 
     @Query(
         """

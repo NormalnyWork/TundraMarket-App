@@ -85,7 +85,11 @@ class NomadMainComponent(
     fun onCancelOrderClicked() {
         val order = currentOrderState.value as CurrentOrderState.Order
 
-        if (order.sourceOrder.status != OrderStatus.Created || stateHolder.isChangingOrderStatus.value) return
+        if (
+            order.sourceOrder.status != OrderStatus.Created ||
+            order.sourceOrder.isCancellationForbidden ||
+            stateHolder.isChangingOrderStatus.value
+        ) return
 
         stateHolder.isChangingOrderStatus.value = true
         stateHolder.scope.launch {
@@ -213,6 +217,9 @@ class NomadMainComponent(
             )
         } ?: CurrentOrderState.Empty
     }
+
+    private val DomainOrder.isCancellationForbidden: Boolean
+        get() = isCreatedViaSms || networkStatus == OrderNetworkStatus.LoadingSms
 
     @Singleton
     class Factory(

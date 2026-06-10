@@ -14,6 +14,7 @@ const val DB_ORDER_COL_TRADING_STATION_ID = "trading_station_id"
 const val DB_ORDER_COL_COMMENT = "comment"
 const val DB_ORDER_COL_STATUS = "status"
 const val DB_ORDER_COL_NETWORK_STATUS = "network_status"
+const val DB_ORDER_COL_IS_CREATED_VIA_SMS = "is_created_via_sms"
 const val DB_ORDER_COL_CREATED_AT = "created_at"
 
 @Entity(
@@ -43,6 +44,8 @@ data class OrderEntity(
     val status: OrderStatusEntity,
     @ColumnInfo(name = DB_ORDER_COL_NETWORK_STATUS)
     val networkStatus: OrderNetworkStatusEntity? = null,
+    @ColumnInfo(name = DB_ORDER_COL_IS_CREATED_VIA_SMS)
+    val isCreatedViaSms: Boolean = false,
     @ColumnInfo(name = DB_ORDER_COL_CREATED_AT)
     val createdAt: Long,
 )

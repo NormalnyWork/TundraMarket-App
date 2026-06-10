@@ -562,7 +562,7 @@ private fun OrderStatusCard(
         }
 
         AnimatedContent(
-            targetState = order.sourceOrder.status.toStatusCardAction(),
+            targetState = order.toStatusCardAction(),
             transitionSpec = {
                 (fadeIn() + slideInVertically { it / 2 })
                     .togetherWith(fadeOut() + slideOutVertically { it / 2 })
@@ -735,9 +735,14 @@ private fun OrderStatus.toStatusCardContent(): StatusCardContent =
         )
     }
 
-private fun OrderStatus.toStatusCardAction(): StatusCardAction =
-    when (this) {
+private fun CurrentOrderState.Order.toStatusCardAction(): StatusCardAction =
+    when (sourceOrder.status) {
         OrderStatus.Created -> StatusCardAction.Cancel
+            .takeUnless {
+                sourceOrder.isCreatedViaSms ||
+                    networkState == OrderNetworkStatus.LoadingSms
+            }
+            ?: StatusCardAction.None
         OrderStatus.Denied -> StatusCardAction.Denied
         OrderStatus.Processing,
         OrderStatus.Sent,

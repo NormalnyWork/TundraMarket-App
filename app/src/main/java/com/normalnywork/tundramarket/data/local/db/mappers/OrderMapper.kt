@@ -29,6 +29,7 @@ fun OrderWithDetails.toDomain() = Order(
         .sortedBy { it.time }
         .map { it.toDomain() },
     networkStatus = order.networkStatus?.toDomain(),
+    isCreatedViaSms = order.isCreatedViaSms,
 )
 
 fun Order.toEntity(
@@ -44,6 +45,7 @@ fun Order.toEntity(
     comment = comment,
     status = status.toEntity(),
     networkStatus = networkStatus?.toEntity(),
+    isCreatedViaSms = isCreatedViaSms,
     createdAt = createdAt,
 )
 

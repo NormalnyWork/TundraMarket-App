@@ -192,10 +192,14 @@ class OrderRepositoryImpl(
         )
 
         database.withTransaction {
-            ordersDao.updateNetworkStatus(
-                localOrderId = localOrderId,
-                networkStatus = if (isSent) null else OrderNetworkStatusEntity.SmsFailed,
-            )
+            if (isSent) {
+                ordersDao.markCreatedViaSms(localOrderId = localOrderId)
+            } else {
+                ordersDao.updateNetworkStatus(
+                    localOrderId = localOrderId,
+                    networkStatus = OrderNetworkStatusEntity.SmsFailed,
+                )
+            }
 
             if (isSent) {
                 syncOutboxDao.deleteByLocalEntityIdAndOperationType(
