@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -65,6 +64,8 @@ import com.normalnywork.tundramarket.domain.entities.OrderStatusHistory
 import com.normalnywork.tundramarket.domain.entities.Product
 import com.normalnywork.tundramarket.domain.entities.TradingStation
 import com.normalnywork.tundramarket.domain.entities.denialComment
+import com.normalnywork.tundramarket.ui.kit.components.TMAlertDialog
+import com.normalnywork.tundramarket.ui.kit.components.TMAlertDialogTextButton
 import com.normalnywork.tundramarket.ui.kit.components.TMButtonSecondary
 import com.normalnywork.tundramarket.ui.kit.components.TMButtonSlider
 import com.normalnywork.tundramarket.ui.kit.components.TMTextField
@@ -797,12 +798,12 @@ private fun DeclineOrderDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
-    OrderActionDialog(
+    TMAlertDialog(
         title = stringResource(R.string.trading_station_order_decline_dialog_title),
         body = stringResource(R.string.trading_station_order_decline_dialog_body),
         onDismiss = onDismiss,
         confirmAction = {
-            DialogTextButton(
+            TMAlertDialogTextButton(
                 text = stringResource(R.string.trading_station_order_details_decline_action),
                 enabled = comment.text.isNotBlank(),
                 onClick = onConfirm,
@@ -829,95 +830,17 @@ private fun IncompleteSendDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
-    OrderActionDialog(
+    TMAlertDialog(
         title = stringResource(R.string.trading_station_order_incomplete_send_dialog_title),
         body = stringResource(R.string.trading_station_order_incomplete_send_dialog_body),
         onDismiss = onDismiss,
         confirmAction = {
-
-            DialogTextButton(
+            TMAlertDialogTextButton(
                 text = stringResource(R.string.trading_station_order_details_send_action),
                 onClick = onConfirm,
             )
         },
     )
-}
-
-@Composable
-private fun OrderActionDialog(
-    title: String,
-    body: String,
-    onDismiss: () -> Unit,
-    confirmAction: @Composable () -> Unit,
-    content: @Composable ColumnScope.() -> Unit = {},
-) {
-    val colors = LocalTMColors.current
-    val typography = LocalTMTypography.current
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = title.uppercase(),
-                style = typography.label,
-                color = colors.textPrimary,
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(
-                    text = body,
-                    style = typography.bodySmall,
-                    color = colors.textSecondary,
-                )
-                content()
-            }
-        },
-        dismissButton = {
-            DialogTextButton(
-                text = stringResource(R.string.trading_station_order_dialog_cancel_action),
-                onClick = onDismiss,
-            )
-        },
-        confirmButton = {
-            confirmAction()
-        },
-        containerColor = colors.background,
-    )
-}
-
-@Composable
-private fun DialogTextButton(
-    text: String,
-    onClick: () -> Unit,
-    enabled: Boolean = true,
-) {
-    val colors = LocalTMColors.current
-    val contentColor by animateColorAsState(
-        targetValue = if (enabled) colors.primary else colors.primary.copy(alpha = 0.45f),
-        label = "DialogTextButtonColor",
-    )
-
-    Box(
-        modifier = Modifier
-            .height(48.dp)
-            .clip(TMShapes.Small)
-            .clickable(
-                enabled = enabled,
-                role = Role.Button,
-                interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(color = colors.primary),
-                onClick = onClick,
-            )
-            .padding(horizontal = 8.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = text.uppercase(),
-            style = LocalTMTypography.current.buttonSmall,
-            color = contentColor,
-        )
-    }
 }
 
 private fun OrderStatus.detailsTitleRes() = when (this) {
