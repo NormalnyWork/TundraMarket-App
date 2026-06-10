@@ -8,6 +8,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.normalnywork.tundramarket.R
 import com.normalnywork.tundramarket.ui.kit.components.TMTextField
+import com.normalnywork.tundramarket.ui.tools.SmsOrderCommentInputTransformation
 
 @Composable
 fun CommentPageContent(comment: TextFieldState) {
@@ -17,5 +18,6 @@ fun CommentPageContent(comment: TextFieldState) {
         multiline = true,
         height = 196.dp,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        inputTransformation = SmsOrderCommentInputTransformation,
     )
 }

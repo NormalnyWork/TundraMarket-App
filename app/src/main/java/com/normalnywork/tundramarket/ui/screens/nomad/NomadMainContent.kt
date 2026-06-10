@@ -32,6 +32,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -54,6 +56,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
 import androidx.compose.ui.unit.dp
@@ -70,6 +73,7 @@ import com.normalnywork.tundramarket.ui.kit.components.TMButtonPrimary
 import com.normalnywork.tundramarket.ui.kit.components.TMButtonSlider
 import com.normalnywork.tundramarket.ui.kit.components.TMButtonTertiary
 import com.normalnywork.tundramarket.ui.kit.components.TMCompactTopBar
+import com.normalnywork.tundramarket.ui.kit.components.TMTextField
 import com.normalnywork.tundramarket.ui.kit.icons.BadConnection
 import com.normalnywork.tundramarket.ui.kit.icons.Checkmark
 import com.normalnywork.tundramarket.ui.kit.icons.ChevronRight
@@ -85,9 +89,11 @@ import com.normalnywork.tundramarket.ui.kit.style.LocalTMColors
 import com.normalnywork.tundramarket.ui.kit.style.LocalTMTypography
 import com.normalnywork.tundramarket.ui.kit.style.TMPreviewWrapperProvider
 import com.normalnywork.tundramarket.ui.kit.style.TMShapes
+import com.normalnywork.tundramarket.ui.screens.nomad.NomadMainComponent.CreateOrderViaSmsState
 import com.normalnywork.tundramarket.ui.screens.nomad.NomadMainComponent.CurrentOrderState
 import com.normalnywork.tundramarket.ui.shared.OrderDetailsCard
 import com.normalnywork.tundramarket.ui.shared.OrderStatusHistoryCard
+import com.normalnywork.tundramarket.ui.tools.SmsOrderCommentInputTransformation
 import com.normalnywork.tundramarket.ui.tools.toDisplayCoordinate
 
 @Composable
@@ -99,12 +105,23 @@ fun NomadMainContent(component: NomadMainComponent) {
 
     var showSmsPermissionDialog by rememberSaveable { mutableStateOf(false) }
     var isRetryingSmsPermission by rememberSaveable { mutableStateOf(false) }
+    var smsCommentDialogState by remember { mutableStateOf<TextFieldState?>(null) }
+
+    fun tryCreateOrderViaSms() {
+        when (val state = component.getCreateOrderViaSmsState()) {
+            is CreateOrderViaSmsState.Ready -> component.onCreateOrderViaSmsClicked(state.comment)
+            is CreateOrderViaSmsState.CommentEditRequired -> {
+                smsCommentDialogState = TextFieldState(initialText = state.comment)
+            }
+            CreateOrderViaSmsState.Unavailable -> Unit
+        }
+    }
 
     val smsPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
     ) { isGranted ->
         if (isGranted) {
-            component.onCreateOrderViaSmsClicked()
+            tryCreateOrderViaSms()
             showSmsPermissionDialog = false
         } else if (isRetryingSmsPermission) {
             showSmsPermissionDialog = false
@@ -128,7 +145,7 @@ fun NomadMainContent(component: NomadMainComponent) {
                 Manifest.permission.SEND_SMS,
             ) == PackageManager.PERMISSION_GRANTED
         ) {
-            component.onCreateOrderViaSmsClicked()
+            tryCreateOrderViaSms()
         } else if (
             activity != null &&
             ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.SEND_SMS)
@@ -165,6 +182,51 @@ fun NomadMainContent(component: NomadMainComponent) {
                 )
             },
         )
+    }
+
+    smsCommentDialogState?.let { commentState ->
+        val comment = commentState.text.toString().trim()
+        val commentSmsState = component.getCreateOrderViaSmsCommentState(comment)
+        val smsLength = commentSmsState.smsLength
+        val canSendWithComment = commentSmsState.canSend
+        val colors = LocalTMColors.current
+
+        TMAlertDialog(
+            title = stringResource(R.string.nomad_main_sms_comment_dialog_title),
+            body = stringResource(R.string.nomad_main_sms_comment_dialog_body),
+            onDismiss = { smsCommentDialogState = null },
+            confirmAction = {
+                TMAlertDialogTextButton(
+                    text = stringResource(R.string.nomad_main_sms_comment_dialog_confirm_action),
+                    enabled = canSendWithComment,
+                    onClick = {
+                        if (canSendWithComment) {
+                            smsCommentDialogState = null
+                            component.onCreateOrderViaSmsClicked(comment)
+                        }
+                    },
+                )
+            },
+        ) {
+            TMTextField(
+                state = commentState,
+                placeholder = stringResource(R.string.nomad_main_sms_comment_dialog_placeholder),
+                multiline = true,
+                height = 132.dp,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                inputTransformation = SmsOrderCommentInputTransformation,
+            )
+            Text(
+                text = "${smsLength ?: 0}/${commentSmsState.smsLimit}",
+                style = LocalTMTypography.current.caption,
+                color = if (smsLength != null && smsLength > commentSmsState.smsLimit) {
+                    colors.primary
+                } else {
+                    colors.textSecondary
+                },
+                modifier = Modifier.align(Alignment.End),
+            )
+        }
     }
 }
 

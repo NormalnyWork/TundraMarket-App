@@ -17,6 +17,8 @@ interface TmSmsOrderCodec {
     fun canFitInSingleSms(message: String): Boolean
 
     fun calculateSmsLength(message: String): Int
+
+    fun calculateSmsLength(order: TmSmsOrder): TmSmsOrderLengthResult
 }
 
 sealed interface TmSmsOrderEncodeResult {
@@ -34,6 +36,13 @@ sealed interface TmSmsOrderDecodeResult {
     ) : TmSmsOrderDecodeResult
 
     data class Failure(val errors: List<TmSmsOrderValidationError>) : TmSmsOrderDecodeResult
+}
+
+sealed interface TmSmsOrderLengthResult {
+
+    data class Success(val smsLength: Int) : TmSmsOrderLengthResult
+
+    data class Failure(val errors: List<TmSmsOrderValidationError>) : TmSmsOrderLengthResult
 }
 
 data class TmSmsOrderValidationResult(

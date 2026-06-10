@@ -2,6 +2,8 @@ package com.normalnywork.tundramarket.domain.repositories
 
 import androidx.paging.PagingData
 import com.normalnywork.tundramarket.domain.entities.Order
+import com.normalnywork.tundramarket.domain.entities.OrderSmsCommentState
+import com.normalnywork.tundramarket.domain.entities.OrderSmsSendState
 import kotlinx.coroutines.flow.Flow
 
 interface OrderRepository {
@@ -13,6 +15,18 @@ interface OrderRepository {
     suspend fun initializeCurrentOrder()
 
     suspend fun createOrder(order: Order)
+
+    suspend fun sendOrderViaSms(
+        order: Order,
+        comment: String,
+    )
+
+    fun getOrderSmsSendState(order: Order): OrderSmsSendState
+
+    fun getOrderSmsCommentState(
+        order: Order,
+        comment: String,
+    ): OrderSmsCommentState
 
     suspend fun updateCurrentOrderStatus()
 

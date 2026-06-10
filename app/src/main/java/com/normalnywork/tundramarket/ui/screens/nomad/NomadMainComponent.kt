@@ -4,10 +4,15 @@ import com.arkivanov.decompose.ComponentContext
 import com.arkivanov.essenty.instancekeeper.getOrCreate
 import com.normalnywork.tundramarket.data.local.preferences.SmsPermissionStore
 import com.normalnywork.tundramarket.domain.entities.OrderNetworkStatus
+import com.normalnywork.tundramarket.domain.entities.OrderSmsCommentState
+import com.normalnywork.tundramarket.domain.entities.OrderSmsSendState
 import com.normalnywork.tundramarket.domain.entities.OrderStatus
 import com.normalnywork.tundramarket.domain.usecases.orders.ChangeOrderStatusUseCase
 import com.normalnywork.tundramarket.domain.usecases.orders.CreateOrderUseCase
 import com.normalnywork.tundramarket.domain.usecases.orders.GetCurrentOrderUseCase
+import com.normalnywork.tundramarket.domain.usecases.orders.GetOrderSmsCommentStateUseCase
+import com.normalnywork.tundramarket.domain.usecases.orders.GetOrderSmsSendStateUseCase
+import com.normalnywork.tundramarket.domain.usecases.orders.SendOrderViaSmsUseCase
 import com.normalnywork.tundramarket.ui.tools.BaseStateHolder
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,6 +30,9 @@ class NomadMainComponent(
     getCurrentOrderUseCase: GetCurrentOrderUseCase,
     private val createOrderUseCase: CreateOrderUseCase,
     private val changeOrderStatusUseCase: ChangeOrderStatusUseCase,
+    private val sendOrderViaSmsUseCase: SendOrderViaSmsUseCase,
+    private val getOrderSmsSendStateUseCase: GetOrderSmsSendStateUseCase,
+    private val getOrderSmsCommentStateUseCase: GetOrderSmsCommentStateUseCase,
     private val smsPermissionStore: SmsPermissionStore,
 ) : ComponentContext by componentContext {
 
@@ -92,15 +100,58 @@ class NomadMainComponent(
         }
     }
 
-    fun onCreateOrderViaSmsClicked() {
+    fun onCreateOrderViaSmsClicked(comment: String) {
         val order = currentOrderState.value as CurrentOrderState.Order
 
         if (
             isCreateOrderViaSmsForbidden.value ||
+            stateHolder.isSendingOrderViaSms.value ||
             order.sourceOrder.tradingStation.phone == null
         ) return
 
-        // SMS transport is handled outside this screen; keep this action explicit for the UI state.
+        if (getOrderSmsCommentStateUseCase(order.sourceOrder, comment).canSend.not()) return
+
+        stateHolder.isSendingOrderViaSms.value = true
+        stateHolder.scope.launch {
+            try {
+                sendOrderViaSmsUseCase(
+                    order = order.sourceOrder,
+                    comment = comment,
+                )
+            } finally {
+                stateHolder.isSendingOrderViaSms.value = false
+            }
+        }
+    }
+
+    fun getCreateOrderViaSmsState(): CreateOrderViaSmsState {
+        val order = currentOrderState.value as? CurrentOrderState.Order
+            ?: return CreateOrderViaSmsState.Unavailable
+        return when (val state = getOrderSmsSendStateUseCase(order.sourceOrder)) {
+            is OrderSmsSendState.Ready -> CreateOrderViaSmsState.Ready(state.comment)
+            is OrderSmsSendState.CommentEditRequired -> CreateOrderViaSmsState.CommentEditRequired(state.comment)
+            OrderSmsSendState.Unavailable -> CreateOrderViaSmsState.Unavailable
+        }
+    }
+
+    fun getCreateOrderViaSmsCommentState(comment: String): CreateOrderViaSmsCommentState {
+        val order = currentOrderState.value as? CurrentOrderState.Order
+        val state = order?.let {
+            getOrderSmsCommentStateUseCase(
+                order = it.sourceOrder,
+                comment = comment,
+            )
+        } ?: OrderSmsCommentState(
+            smsLength = null,
+            smsLimit = 0,
+            canSend = false,
+        )
+
+        return CreateOrderViaSmsCommentState(
+            smsLength = state.smsLength,
+            smsLimit = state.smsLimit,
+            canSend = state.canSend,
+        )
     }
 
     fun onCreateOrderViaSmsForbidden() {
@@ -120,6 +171,21 @@ class NomadMainComponent(
         ) : CurrentOrderState
     }
 
+    sealed interface CreateOrderViaSmsState {
+
+        data class Ready(val comment: String) : CreateOrderViaSmsState
+
+        data class CommentEditRequired(val comment: String) : CreateOrderViaSmsState
+
+        data object Unavailable : CreateOrderViaSmsState
+    }
+
+    data class CreateOrderViaSmsCommentState(
+        val smsLength: Int?,
+        val smsLimit: Int,
+        val canSend: Boolean,
+    )
+
     data class ProductItem(
         val name: String,
         val quantity: Int,
@@ -129,6 +195,7 @@ class NomadMainComponent(
 
         val isRepeatingOrder = MutableStateFlow(false)
         val isChangingOrderStatus = MutableStateFlow(false)
+        val isSendingOrderViaSms = MutableStateFlow(false)
     }
 
     private fun DomainOrder?.toCurrentOrderState(): CurrentOrderState {
@@ -152,6 +219,9 @@ class NomadMainComponent(
         private val getCurrentOrderUseCase: GetCurrentOrderUseCase,
         private val createOrderUseCase: CreateOrderUseCase,
         private val changeOrderStatusUseCase: ChangeOrderStatusUseCase,
+        private val sendOrderViaSmsUseCase: SendOrderViaSmsUseCase,
+        private val getOrderSmsSendStateUseCase: GetOrderSmsSendStateUseCase,
+        private val getOrderSmsCommentStateUseCase: GetOrderSmsCommentStateUseCase,
         private val smsPermissionStore: SmsPermissionStore,
     ) {
 
@@ -166,6 +236,9 @@ class NomadMainComponent(
             getCurrentOrderUseCase = getCurrentOrderUseCase,
             createOrderUseCase = createOrderUseCase,
             changeOrderStatusUseCase = changeOrderStatusUseCase,
+            sendOrderViaSmsUseCase = sendOrderViaSmsUseCase,
+            getOrderSmsSendStateUseCase = getOrderSmsSendStateUseCase,
+            getOrderSmsCommentStateUseCase = getOrderSmsCommentStateUseCase,
             smsPermissionStore = smsPermissionStore,
         )
     }

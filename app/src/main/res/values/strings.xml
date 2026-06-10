@@ -54,6 +54,10 @@
     <string name="nomad_main_sms_permission_dialog_title">Разрешение на SMS</string>
     <string name="nomad_main_sms_permission_dialog_body">Без разрешения на отправку SMS не получится отправить заказ на факторию по SMS.</string>
     <string name="nomad_main_sms_permission_dialog_confirm_action">Разрешить</string>
+    <string name="nomad_main_sms_comment_dialog_title">Комментарий слишком длинный</string>
+    <string name="nomad_main_sms_comment_dialog_body">Комментарий не помещается в одно SMS. Измените комментарий, чтобы отправить заказ по SMS.</string>
+    <string name="nomad_main_sms_comment_dialog_placeholder">Комментарий к заказу</string>
+    <string name="nomad_main_sms_comment_dialog_confirm_action">Отправить</string>
     <string name="nomad_main_status_card_title">Статус</string>
     <string name="nomad_main_status_created_title">Создан</string>
     <string name="nomad_main_status_created_body">Фактория еще не приступила к обработке заказа</string>

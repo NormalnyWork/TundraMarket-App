@@ -106,7 +106,7 @@ class NomadCreateOrderComponent(
 
     fun onProductIncremented(product: Product) {
         val current = selectedProductQuantities.value
-        selectedProductQuantities.value = current + (product.id to ((current[product.id] ?: 0) + 1))
+        selectedProductQuantities.value = current + (product.id to ((current[product.id] ?: 0) + 1).coerceAtMost(50))
     }
 
     fun onProductDecremented(product: Product) {

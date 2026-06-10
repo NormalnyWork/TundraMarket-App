@@ -1,5 +1,14 @@
 package com.normalnywork.tundramarket.data
 
+import android.app.Activity
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.Build
+import android.telephony.SmsManager
+import androidx.core.content.ContextCompat
 import androidx.paging.ExperimentalPagingApi
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
@@ -21,9 +30,17 @@ import com.normalnywork.tundramarket.data.local.db.mappers.toDomain
 import com.normalnywork.tundramarket.data.local.db.mappers.toEntity
 import com.normalnywork.tundramarket.data.local.db.mappers.toOrderProductEntity
 import com.normalnywork.tundramarket.data.local.preferences.OrderHistorySyncStore
+import com.normalnywork.tundramarket.data.remote.sms.TmSmsOrder
+import com.normalnywork.tundramarket.data.remote.sms.TmSmsOrderCartItem
+import com.normalnywork.tundramarket.data.remote.sms.TmSmsOrderCodecs
+import com.normalnywork.tundramarket.data.remote.sms.TmSmsOrderEncodeResult
+import com.normalnywork.tundramarket.data.remote.sms.TmSmsOrderLengthResult
+import com.normalnywork.tundramarket.data.remote.sms.TmSmsOrderValidationError
 import com.normalnywork.tundramarket.data.remote.source.RemoteOrdersDataSource
 import com.normalnywork.tundramarket.domain.entities.Order
 import com.normalnywork.tundramarket.domain.entities.OrderNetworkStatus
+import com.normalnywork.tundramarket.domain.entities.OrderSmsCommentState
+import com.normalnywork.tundramarket.domain.entities.OrderSmsSendState
 import com.normalnywork.tundramarket.domain.entities.OrderStatus
 import com.normalnywork.tundramarket.domain.entities.TradingStationOrdersPage
 import com.normalnywork.tundramarket.domain.repositories.OrderRepository
@@ -31,11 +48,15 @@ import com.normalnywork.tundramarket.sync.SyncWorkScheduler
 import com.normalnywork.tundramarket.utils.NetworkStatusObserver
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import org.koin.core.annotation.Singleton
 import java.util.UUID
+import kotlin.coroutines.resume
 
 @Singleton
 class OrderRepositoryImpl(
+    private val context: Context,
     private val database: TMDatabase,
     private val ordersDao: OrdersDao,
     private val syncOutboxDao: SyncOutboxDao,
@@ -139,6 +160,66 @@ class OrderRepositoryImpl(
         }
 
         syncWorkScheduler.schedule()
+    }
+
+    override suspend fun sendOrderViaSms(
+        order: Order,
+        comment: String,
+    ) {
+        val phone = order.tradingStation.phone ?: return
+        val localOrder = ordersDao.getOrderByLocalOrServerId(order.id) ?: return
+        val localOrderId = localOrder.order.id
+        val message = when (val encodeResult = TmSmsOrderCodecs.encode(order.toSmsOrder(comment))) {
+            is TmSmsOrderEncodeResult.Success -> encodeResult.message
+            is TmSmsOrderEncodeResult.Failure -> {
+                ordersDao.updateNetworkStatus(
+                    localOrderId = localOrderId,
+                    networkStatus = OrderNetworkStatusEntity.SmsFailed,
+                )
+                return
+            }
+        }
+
+        ordersDao.updateCommentAndNetworkStatus(
+            localOrderId = localOrderId,
+            comment = comment,
+            networkStatus = OrderNetworkStatusEntity.LoadingSms,
+        )
+
+        val isSent = sendSms(
+            phone = phone,
+            message = message,
+        )
+
+        ordersDao.updateNetworkStatus(
+            localOrderId = localOrderId,
+            networkStatus = if (isSent) null else OrderNetworkStatusEntity.SmsFailed,
+        )
+    }
+
+    override fun getOrderSmsSendState(order: Order): OrderSmsSendState {
+        val comment = order.comment.trim()
+        return when {
+            order.canBeSentViaSms(comment) -> OrderSmsSendState.Ready(comment)
+            order.shouldOfferSmsCommentEdit(comment) -> OrderSmsSendState.CommentEditRequired(comment)
+            else -> OrderSmsSendState.Unavailable
+        }
+    }
+
+    override fun getOrderSmsCommentState(
+        order: Order,
+        comment: String,
+    ): OrderSmsCommentState {
+        val smsLength = when (val lengthResult = TmSmsOrderCodecs.calculateSmsLength(order.toSmsOrder(comment))) {
+            is TmSmsOrderLengthResult.Success -> lengthResult.smsLength
+            is TmSmsOrderLengthResult.Failure -> null
+        }
+
+        return OrderSmsCommentState(
+            smsLength = smsLength,
+            smsLimit = TmSmsOrderCodecs.singleSmsLimit,
+            canSend = order.canBeSentViaSms(comment),
+        )
     }
 
     override suspend fun updateCurrentOrderStatus() {
@@ -427,8 +508,102 @@ class OrderRepositoryImpl(
         }
     }
 
+    @Suppress("DEPRECATION")
+    private val smsManager: SmsManager
+        get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            context.getSystemService(SmsManager::class.java)
+        } else {
+            SmsManager.getDefault()
+        }
+
+    private fun Order.toSmsOrder(comment: String): TmSmsOrder {
+        return TmSmsOrder(
+            clientOrderId = id,
+            location = location,
+            cart = cart.map { (product, quantity) ->
+                TmSmsOrderCartItem(
+                    productId = product.id,
+                    quantity = quantity,
+                )
+            },
+            comment = comment,
+        )
+    }
+
+    private fun Order.canBeSentViaSms(comment: String): Boolean {
+        return TmSmsOrderCodecs.encode(toSmsOrder(comment)) is TmSmsOrderEncodeResult.Success
+    }
+
+    private fun Order.shouldOfferSmsCommentEdit(comment: String): Boolean {
+        val encodeResult = TmSmsOrderCodecs.encode(toSmsOrder(comment))
+        if (encodeResult !is TmSmsOrderEncodeResult.Failure) return false
+
+        val canBeFixedByComment = encodeResult.errors.any { error ->
+            error == TmSmsOrderValidationError.SmsLengthExceeded ||
+                error == TmSmsOrderValidationError.InvalidComment
+        }
+
+        return canBeFixedByComment && canBeSentViaSms(comment = "")
+    }
+
+    private suspend fun sendSms(
+        phone: String,
+        message: String,
+    ): Boolean {
+        return withTimeoutOrNull(SMS_SEND_TIMEOUT_MS) {
+            suspendCancellableCoroutine { continuation ->
+                val action = "${context.packageName}.SMS_SENT.${System.nanoTime()}"
+                val intent = Intent(action).setPackage(context.packageName)
+                val sentIntent = PendingIntent.getBroadcast(
+                    context,
+                    0,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+                val receiver = object : BroadcastReceiver() {
+
+                    override fun onReceive(
+                        context: Context,
+                        intent: Intent,
+                    ) {
+                        runCatching { context.unregisterReceiver(this) }
+                        if (continuation.isActive) {
+                            continuation.resume(resultCode == Activity.RESULT_OK)
+                        }
+                    }
+                }
+
+                ContextCompat.registerReceiver(
+                    context,
+                    receiver,
+                    IntentFilter(action),
+                    ContextCompat.RECEIVER_NOT_EXPORTED,
+                )
+                continuation.invokeOnCancellation {
+                    runCatching { context.unregisterReceiver(receiver) }
+                }
+
+                runCatching {
+                    smsManager.sendTextMessage(
+                        phone,
+                        null,
+                        message,
+                        sentIntent,
+                        null,
+                    )
+                }.onFailure {
+                    runCatching { context.unregisterReceiver(receiver) }
+                    if (continuation.isActive) {
+                        continuation.resume(false)
+                    }
+                }
+            }
+        } ?: false
+    }
+
     private companion object {
 
+        const val SMS_SEND_TIMEOUT_MS = 30_000L
         const val ORDERS_PAGE_SIZE = 20
         const val HISTORY_PAGE_SIZE = ORDERS_PAGE_SIZE
 

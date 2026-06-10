@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
+import com.normalnywork.tundramarket.data.local.db.entities.DB_ORDER_COL_COMMENT
 import com.normalnywork.tundramarket.data.local.db.entities.DB_ORDER_COL_CREATED_AT
 import com.normalnywork.tundramarket.data.local.db.entities.DB_ORDER_COL_ID
 import com.normalnywork.tundramarket.data.local.db.entities.DB_ORDER_COL_NETWORK_STATUS
@@ -137,6 +138,20 @@ interface OrdersDao {
     )
     suspend fun updateNetworkStatus(
         localOrderId: Int,
+        networkStatus: OrderNetworkStatusEntity?,
+    )
+
+    @Query(
+        """
+        UPDATE $DB_ORDER_TABLE_NAME
+        SET $DB_ORDER_COL_COMMENT = :comment,
+            $DB_ORDER_COL_NETWORK_STATUS = :networkStatus
+        WHERE $DB_ORDER_COL_ID = :localOrderId
+        """,
+    )
+    suspend fun updateCommentAndNetworkStatus(
+        localOrderId: Int,
+        comment: String,
         networkStatus: OrderNetworkStatusEntity?,
     )
 

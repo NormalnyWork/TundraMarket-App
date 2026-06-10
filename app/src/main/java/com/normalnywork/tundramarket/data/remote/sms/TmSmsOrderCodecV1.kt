@@ -8,37 +8,9 @@ object TmSmsOrderCodecV1 : TmSmsOrderCodec {
     override val version: Int = 1
 
     override fun encode(order: TmSmsOrder): TmSmsOrderEncodeResult {
-        val errors = validateOrder(order).toMutableList()
-        val encodedComment = order.comment
-            ?.trim()
-            ?.takeIf { it.isNotEmpty() }
-            ?.let { comment -> TmSmsOrderCommentCodec.encode(comment).getOrNull() }
-
-        if (!order.comment.isNullOrBlank() && encodedComment == null) {
-            errors += TmSmsOrderValidationError.InvalidComment
-        }
-
-        if (errors.isNotEmpty()) {
-            return TmSmsOrderEncodeResult.Failure(errors.distinct())
-        }
-
-        val body = listOf(
-            TmSmsOrderConstants.ProtocolMarker,
-            TmSmsOrderBase62.encode(version),
-            TmSmsOrderBase62.encode(order.clientOrderId),
-            encodeLocation(order.location),
-            encodeCart(order.cart),
-        ).joinToString(separator = ".")
-
-        val message = buildString {
-            append(body)
-            append('.')
-            append(encodeCrc(body))
-
-            if (encodedComment != null) {
-                append('.')
-                append(encodedComment)
-            }
+        val message = when (val result = buildMessage(order)) {
+            is BuildMessageResult.Success -> result.message
+            is BuildMessageResult.Failure -> return TmSmsOrderEncodeResult.Failure(result.errors)
         }
 
         if (calculateSmsLength(message) > TmSmsOrderConstants.SmsLimit) {
@@ -122,6 +94,52 @@ object TmSmsOrderCodecV1 : TmSmsOrderCodec {
 
     override fun calculateSmsLength(message: String): Int {
         return TmSmsOrderGsm7Budget.calculate(message)
+    }
+
+    override fun calculateSmsLength(order: TmSmsOrder): TmSmsOrderLengthResult {
+        val message = when (val result = buildMessage(order)) {
+            is BuildMessageResult.Success -> result.message
+            is BuildMessageResult.Failure -> return TmSmsOrderLengthResult.Failure(result.errors)
+        }
+
+        return TmSmsOrderLengthResult.Success(calculateSmsLength(message))
+    }
+
+    private fun buildMessage(order: TmSmsOrder): BuildMessageResult {
+        val errors = validateOrder(order).toMutableList()
+        val encodedComment = order.comment
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { comment -> TmSmsOrderCommentCodec.encode(comment).getOrNull() }
+
+        if (!order.comment.isNullOrBlank() && encodedComment == null) {
+            errors += TmSmsOrderValidationError.InvalidComment
+        }
+
+        if (errors.isNotEmpty()) {
+            return BuildMessageResult.Failure(errors.distinct())
+        }
+
+        val body = listOf(
+            TmSmsOrderConstants.ProtocolMarker,
+            TmSmsOrderBase62.encode(version),
+            TmSmsOrderBase62.encode(order.clientOrderId),
+            encodeLocation(order.location),
+            encodeCart(order.cart),
+        ).joinToString(separator = ".")
+
+        return BuildMessageResult.Success(
+            message = buildString {
+                append(body)
+                append('.')
+                append(encodeCrc(body))
+
+                if (encodedComment != null) {
+                    append('.')
+                    append(encodedComment)
+                }
+            }
+        )
     }
 
     private fun validateOrder(order: TmSmsOrder): List<TmSmsOrderValidationError> {
@@ -304,4 +322,11 @@ object TmSmsOrderCodecV1 : TmSmsOrderCodec {
     private const val MaxEncodedLatitude = 18_000_000L
     private const val MinEncodedLongitude = 0L
     private const val MaxEncodedLongitude = 36_000_000L
+
+    private sealed interface BuildMessageResult {
+
+        data class Success(val message: String) : BuildMessageResult
+
+        data class Failure(val errors: List<TmSmsOrderValidationError>) : BuildMessageResult
+    }
 }

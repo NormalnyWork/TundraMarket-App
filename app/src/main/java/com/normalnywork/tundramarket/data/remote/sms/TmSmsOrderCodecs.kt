@@ -2,7 +2,23 @@ package com.normalnywork.tundramarket.data.remote.sms
 
 object TmSmsOrderCodecs {
 
-    private val codecsByVersion = listOf(TmSmsOrderCodecV1).associateBy { codec -> codec.version }
+    val actualCodec: TmSmsOrderCodec = TmSmsOrderCodecV1
+
+    val singleSmsLimit: Int = TmSmsOrderConstants.SmsLimit
+
+    private val codecsByVersion = listOf(actualCodec).associateBy { codec -> codec.version }
+
+    fun encode(order: TmSmsOrder): TmSmsOrderEncodeResult {
+        return actualCodec.encode(order)
+    }
+
+    fun calculateSmsLength(order: TmSmsOrder): TmSmsOrderLengthResult {
+        return actualCodec.calculateSmsLength(order)
+    }
+
+    fun canFitInSingleSms(order: TmSmsOrder): Boolean {
+        return actualCodec.canFitInSingleSms(order)
+    }
 
     fun validate(message: String): TmSmsOrderValidationResult {
         val smsLength = calculateSmsLength(message)
