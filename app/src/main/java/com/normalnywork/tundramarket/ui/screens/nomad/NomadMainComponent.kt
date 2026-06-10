@@ -2,6 +2,7 @@ package com.normalnywork.tundramarket.ui.screens.nomad
 
 import com.arkivanov.decompose.ComponentContext
 import com.arkivanov.essenty.instancekeeper.getOrCreate
+import com.normalnywork.tundramarket.data.local.preferences.SmsPermissionStore
 import com.normalnywork.tundramarket.domain.entities.OrderNetworkStatus
 import com.normalnywork.tundramarket.domain.entities.OrderStatus
 import com.normalnywork.tundramarket.domain.usecases.orders.ChangeOrderStatusUseCase
@@ -24,9 +25,18 @@ class NomadMainComponent(
     getCurrentOrderUseCase: GetCurrentOrderUseCase,
     private val createOrderUseCase: CreateOrderUseCase,
     private val changeOrderStatusUseCase: ChangeOrderStatusUseCase,
+    private val smsPermissionStore: SmsPermissionStore,
 ) : ComponentContext by componentContext {
 
     private val stateHolder = instanceKeeper.getOrCreate { StateHolder() }
+
+    val isCreateOrderViaSmsForbidden: StateFlow<Boolean> = smsPermissionStore
+        .isCreateOrderViaSmsForbidden()
+        .stateIn(
+            scope = stateHolder.scope,
+            started = SharingStarted.Lazily,
+            initialValue = false,
+        )
 
     val currentOrderState: StateFlow<CurrentOrderState> = getCurrentOrderUseCase()
         .map { order -> order.toCurrentOrderState() }
@@ -44,8 +54,10 @@ class NomadMainComponent(
         onCreateOrder.invoke()
     }
 
-    fun onRepeatOrderClicked(order: CurrentOrderState.Order) {
+    fun onRepeatOrderClicked() {
         if (stateHolder.isRepeatingOrder.value) return
+
+        val order = currentOrderState.value as CurrentOrderState.Order
 
         stateHolder.isRepeatingOrder.value = true
         stateHolder.scope.launch {
@@ -62,7 +74,9 @@ class NomadMainComponent(
         }
     }
 
-    fun onCancelOrderClicked(order: CurrentOrderState.Order) {
+    fun onCancelOrderClicked() {
+        val order = currentOrderState.value as CurrentOrderState.Order
+
         if (order.sourceOrder.status != OrderStatus.Created || stateHolder.isChangingOrderStatus.value) return
 
         stateHolder.isChangingOrderStatus.value = true
@@ -78,8 +92,21 @@ class NomadMainComponent(
         }
     }
 
-    fun onCreateOrderViaSmsClicked(order: CurrentOrderState.Order) {
+    fun onCreateOrderViaSmsClicked() {
+        val order = currentOrderState.value as CurrentOrderState.Order
+
+        if (
+            isCreateOrderViaSmsForbidden.value ||
+            order.sourceOrder.tradingStation.phone == null
+        ) return
+
         // SMS transport is handled outside this screen; keep this action explicit for the UI state.
+    }
+
+    fun onCreateOrderViaSmsForbidden() {
+        stateHolder.scope.launch {
+            smsPermissionStore.forbidCreateOrderViaSms()
+        }
     }
 
     sealed interface CurrentOrderState {
@@ -125,6 +152,7 @@ class NomadMainComponent(
         private val getCurrentOrderUseCase: GetCurrentOrderUseCase,
         private val createOrderUseCase: CreateOrderUseCase,
         private val changeOrderStatusUseCase: ChangeOrderStatusUseCase,
+        private val smsPermissionStore: SmsPermissionStore,
     ) {
 
         operator fun invoke(
@@ -138,6 +166,7 @@ class NomadMainComponent(
             getCurrentOrderUseCase = getCurrentOrderUseCase,
             createOrderUseCase = createOrderUseCase,
             changeOrderStatusUseCase = changeOrderStatusUseCase,
+            smsPermissionStore = smsPermissionStore,
         )
     }
 }

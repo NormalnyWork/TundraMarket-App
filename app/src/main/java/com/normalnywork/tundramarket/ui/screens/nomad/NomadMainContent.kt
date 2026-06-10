@@ -1,5 +1,10 @@
 package com.normalnywork.tundramarket.ui.screens.nomad
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
@@ -40,21 +45,27 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.normalnywork.tundramarket.R
 import com.normalnywork.tundramarket.domain.entities.OrderNetworkStatus
 import com.normalnywork.tundramarket.domain.entities.OrderStatus
 import com.normalnywork.tundramarket.domain.entities.denialComment
 import com.normalnywork.tundramarket.domain.entities.isTerminal
+import com.normalnywork.tundramarket.ui.kit.components.TMAlertDialog
+import com.normalnywork.tundramarket.ui.kit.components.TMAlertDialogTextButton
 import com.normalnywork.tundramarket.ui.kit.components.TMButtonPrimary
 import com.normalnywork.tundramarket.ui.kit.components.TMButtonSlider
 import com.normalnywork.tundramarket.ui.kit.components.TMButtonTertiary
@@ -82,25 +93,90 @@ import com.normalnywork.tundramarket.ui.tools.toDisplayCoordinate
 @Composable
 fun NomadMainContent(component: NomadMainComponent) {
     val currentOrderState by component.currentOrderState.collectAsState()
+    val isCreateOrderViaSmsForbidden by component.isCreateOrderViaSmsForbidden.collectAsState()
+    val activity = LocalActivity.current
+    val context = LocalContext.current
+
+    var showSmsPermissionDialog by rememberSaveable { mutableStateOf(false) }
+    var isRetryingSmsPermission by rememberSaveable { mutableStateOf(false) }
+
+    val smsPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { isGranted ->
+        if (isGranted) {
+            component.onCreateOrderViaSmsClicked()
+            showSmsPermissionDialog = false
+        } else if (isRetryingSmsPermission) {
+            showSmsPermissionDialog = false
+            component.onCreateOrderViaSmsForbidden()
+        } else {
+            showSmsPermissionDialog = true
+        }
+
+        isRetryingSmsPermission = false
+    }
+
+    fun requestCreateOrderViaSms() {
+        if (
+            isCreateOrderViaSmsForbidden ||
+            (currentOrderState as? CurrentOrderState.Order)?.sourceOrder?.tradingStation?.phone == null
+        ) return
+
+        if (
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.SEND_SMS,
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            component.onCreateOrderViaSmsClicked()
+        } else if (
+            activity != null &&
+            ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.SEND_SMS)
+        ) {
+            showSmsPermissionDialog = true
+        } else {
+            isRetryingSmsPermission = false
+            smsPermissionLauncher.launch(Manifest.permission.SEND_SMS)
+        }
+    }
 
     NomadMainContent(
         currentOrderState = currentOrderState,
+        isCreateOrderViaSmsForbidden = isCreateOrderViaSmsForbidden,
         onOpenHistoryClick = component::onOpenHistoryClicked,
         onCreateOrderClick = component::onCreateOrderClicked,
         onRepeatOrderClick = component::onRepeatOrderClicked,
         onCancelOrderClick = component::onCancelOrderClicked,
-        onCreateOrderViaSmsClick = component::onCreateOrderViaSmsClicked,
+        onCreateOrderViaSmsClick = ::requestCreateOrderViaSms,
     )
+
+    if (showSmsPermissionDialog) {
+        TMAlertDialog(
+            title = stringResource(R.string.nomad_main_sms_permission_dialog_title),
+            body = stringResource(R.string.nomad_main_sms_permission_dialog_body),
+            onDismiss = { showSmsPermissionDialog = false },
+            confirmAction = {
+                TMAlertDialogTextButton(
+                    text = stringResource(R.string.nomad_main_sms_permission_dialog_confirm_action),
+                    onClick = {
+                        isRetryingSmsPermission = true
+                        smsPermissionLauncher.launch(Manifest.permission.SEND_SMS)
+                    },
+                )
+            },
+        )
+    }
 }
 
 @Composable
 private fun NomadMainContent(
     currentOrderState: CurrentOrderState,
+    isCreateOrderViaSmsForbidden: Boolean,
     onOpenHistoryClick: () -> Unit,
     onCreateOrderClick: () -> Unit,
-    onRepeatOrderClick: (CurrentOrderState.Order) -> Unit,
-    onCancelOrderClick: (CurrentOrderState.Order) -> Unit,
-    onCreateOrderViaSmsClick: (CurrentOrderState.Order) -> Unit,
+    onRepeatOrderClick: () -> Unit,
+    onCancelOrderClick: () -> Unit,
+    onCreateOrderViaSmsClick: () -> Unit,
 ) {
     val colors = LocalTMColors.current
     val scrollState = rememberScrollState()
@@ -125,6 +201,7 @@ private fun NomadMainContent(
                 onCreateOrderClick = onCreateOrderClick,
                 onRepeatOrderClick = onRepeatOrderClick,
                 onCancelOrderClick = onCancelOrderClick,
+                isCreateOrderViaSmsForbidden = isCreateOrderViaSmsForbidden,
                 onCreateOrderViaSmsClick = onCreateOrderViaSmsClick,
                 modifier = Modifier.padding(paddings),
             )
@@ -148,9 +225,10 @@ private fun NomadMainMiddleContent(
     scrollState: ScrollState,
     currentOrderState: CurrentOrderState,
     onCreateOrderClick: () -> Unit,
-    onRepeatOrderClick: (CurrentOrderState.Order) -> Unit,
-    onCancelOrderClick: (CurrentOrderState.Order) -> Unit,
-    onCreateOrderViaSmsClick: (CurrentOrderState.Order) -> Unit,
+    onRepeatOrderClick: () -> Unit,
+    onCancelOrderClick: () -> Unit,
+    isCreateOrderViaSmsForbidden: Boolean,
+    onCreateOrderViaSmsClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -173,12 +251,14 @@ private fun NomadMainMiddleContent(
             is CurrentOrderState.Order -> {
                 AnimatedNetworkStatusCard(
                     networkState = currentOrderState.networkState,
-                    onCreateOrderViaSmsClick = { onCreateOrderViaSmsClick(currentOrderState) },
+                    canCreateOrderViaSms = !isCreateOrderViaSmsForbidden &&
+                        currentOrderState.sourceOrder.tradingStation.phone != null,
+                    onCreateOrderViaSmsClick = { onCreateOrderViaSmsClick() },
                 )
                 OrderStatusCard(
                     order = currentOrderState,
-                    onRepeatOrderClick = { onRepeatOrderClick(currentOrderState) },
-                    onCancelOrderClick = { onCancelOrderClick(currentOrderState) },
+                    onRepeatOrderClick = { onRepeatOrderClick() },
+                    onCancelOrderClick = { onCancelOrderClick() },
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 OrderStatusHistoryCard(history = currentOrderState.sourceOrder.statusHistory)
@@ -195,6 +275,7 @@ private fun NomadMainMiddleContent(
 @Composable
 private fun AnimatedNetworkStatusCard(
     networkState: OrderNetworkStatus?,
+    canCreateOrderViaSms: Boolean,
     onCreateOrderViaSmsClick: () -> Unit,
 ) {
     var visibleNetworkState by remember { mutableStateOf(networkState) }
@@ -214,6 +295,7 @@ private fun AnimatedNetworkStatusCard(
             Column {
                 NetworkStatusCard(
                     networkState = state,
+                    canCreateOrderViaSms = canCreateOrderViaSms,
                     onCreateOrderViaSmsClick = onCreateOrderViaSmsClick,
                 )
                 Spacer(modifier = Modifier.height(16.dp))
@@ -225,6 +307,7 @@ private fun AnimatedNetworkStatusCard(
 @Composable
 private fun NetworkStatusCard(
     networkState: OrderNetworkStatus,
+    canCreateOrderViaSms: Boolean,
     onCreateOrderViaSmsClick: () -> Unit,
 ) {
     val colors = LocalTMColors.current
@@ -245,7 +328,9 @@ private fun NetworkStatusCard(
             .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
         AnimatedContent(
-            targetState = networkState.toNetworkStatusCardContent(),
+            targetState = networkState.toNetworkStatusCardContent(
+                canCreateOrderViaSms = canCreateOrderViaSms,
+            ),
             transitionSpec = {
                 (fadeIn() + slideInVertically { it / 3 })
                     .togetherWith(fadeOut() + slideOutVertically { -it / 3 })
@@ -599,7 +684,9 @@ private fun OrderStatus.toStatusCardAction(): StatusCardAction =
     }
 
 @Composable
-private fun OrderNetworkStatus.toNetworkStatusCardContent(): NetworkStatusCardContent =
+private fun OrderNetworkStatus.toNetworkStatusCardContent(
+    canCreateOrderViaSms: Boolean,
+): NetworkStatusCardContent =
     when (this) {
         OrderNetworkStatus.Enqueued,
         OrderNetworkStatus.Processing,
@@ -614,7 +701,11 @@ private fun OrderNetworkStatus.toNetworkStatusCardContent(): NetworkStatusCardCo
             title = stringResource(R.string.nomad_main_network_status_waiting_title),
             body = stringResource(R.string.nomad_main_network_status_create_failed_body),
             iconType = NetworkStatusCardIcon.BadConnection,
-            action = NetworkStatusCardAction.SendSms,
+            action = if (canCreateOrderViaSms) {
+                NetworkStatusCardAction.SendSms
+            } else {
+                NetworkStatusCardAction.None
+            },
         )
 
         OrderNetworkStatus.LoadingSms -> NetworkStatusCardContent(
@@ -628,7 +719,11 @@ private fun OrderNetworkStatus.toNetworkStatusCardContent(): NetworkStatusCardCo
             title = stringResource(R.string.nomad_main_network_status_waiting_title),
             body = stringResource(R.string.nomad_main_network_status_sms_failed_body),
             iconType = NetworkStatusCardIcon.BadConnection,
-            action = NetworkStatusCardAction.RetrySms,
+            action = if (canCreateOrderViaSms) {
+                NetworkStatusCardAction.RetrySms
+            } else {
+                NetworkStatusCardAction.None
+            },
         )
 
         OrderNetworkStatus.Updating -> NetworkStatusCardContent(
@@ -759,6 +854,7 @@ private fun OrderOverviewInfo(
 private fun NomadMainContentPreview() {
     NomadMainContent(
         currentOrderState = CurrentOrderState.Empty,
+        isCreateOrderViaSmsForbidden = false,
         onOpenHistoryClick = {},
         onCreateOrderClick = {},
         onRepeatOrderClick = {},
