@@ -7,13 +7,11 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -30,14 +28,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
 import androidx.compose.ui.unit.dp
 import com.normalnywork.tundramarket.R
 import com.normalnywork.tundramarket.ui.kit.components.InfoCard
+import com.normalnywork.tundramarket.ui.kit.components.TMTimeline
 import com.normalnywork.tundramarket.ui.kit.components.TMTopBar
 import com.normalnywork.tundramarket.ui.kit.icons.Checkmark
 import com.normalnywork.tundramarket.ui.kit.icons.Internet
@@ -119,131 +116,114 @@ private fun StatusCard(
             style = typography.label,
             color = colors.textPrimary,
         )
-        Column {
+        val items = listOfNotNull(
             StatusItem(
                 title = stringResource(R.string.auth_init_step_auth),
                 status = authStatus,
-            )
-            if (tradingStationsStatus != null) {
-                StatusItemsDivider()
+            ),
+            tradingStationsStatus?.let {
                 StatusItem(
                     title = stringResource(R.string.auth_init_step_stations),
-                    status = tradingStationsStatus,
+                    status = it,
                 )
-            }
-            if (catalogStatus != null) {
-                StatusItemsDivider()
+            },
+            catalogStatus?.let {
                 StatusItem(
                     title = stringResource(R.string.auth_init_step_catalog),
-                    status = catalogStatus,
+                    status = it,
                 )
-            }
-            if (currentOrderStatus != null) {
-                StatusItemsDivider()
+            },
+            currentOrderStatus?.let {
                 StatusItem(
                     title = stringResource(R.string.auth_init_step_current_order),
-                    status = currentOrderStatus,
+                    status = it,
                 )
-            }
-        }
-    }
-}
+            },
+        )
 
-@Composable
-private fun StatusItemsDivider() {
-    val color = LocalTMColors.current.primaryVariant
-
-    Canvas(
-        modifier = Modifier
-            .padding(horizontal = 19.dp)
-            .size(width = 2.dp, height = 12.dp)
-    ) {
-        val strokeWidth = size.width
-
-        drawLine(
-            color = color,
-            start = Offset(x = size.width / 2, y = 0f),
-            end = Offset(x = size.width / 2, y = size.height),
-            strokeWidth = strokeWidth,
-            pathEffect = PathEffect.dashPathEffect(
-                floatArrayOf(
-                    2.dp.toPx(),
-                    2.dp.toPx(),
-                )
-            ),
+        TMTimeline(
+            itemsCount = items.size,
+            marker = { index ->
+                StatusMarker(status = items[index].status)
+            },
+            content = { index ->
+                StatusItemText(item = items[index])
+            },
         )
     }
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun StatusItem(
-    title: String,
-    status: Status,
-) {
+private fun StatusMarker(status: Status) {
     val colors = LocalTMColors.current
-    val typography = LocalTMTypography.current
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    val container by animateColorAsState(
+        if (status == Status.Processing) colors.primary
+        else colors.primaryVariant
+    )
+
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .background(
+                color = container,
+                shape = CircleShape,
+            ),
+        contentAlignment = Alignment.Center,
     ) {
-        val container by animateColorAsState(
-            if (status == Status.Processing) colors.primary
-            else colors.primaryVariant
-        )
-
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .background(
-                    color = container,
-                    shape = CircleShape,
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            AnimatedContent(status) {
-                if (it == Status.Processing) {
-                    LoadingIndicator(
-                        color = colors.onPrimary,
-                        modifier = Modifier.size(24.dp),
-                    )
-                } else {
-                    Icon(
-                        imageVector = when (it) {
-                            Status.Queued -> TMIcons.Waiting
-                            Status.Done -> TMIcons.Checkmark
-                        },
-                        contentDescription = null,
-                        tint = colors.primary,
-                        modifier = Modifier.size(24.dp),
-                    )
-                }
-            }
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(
-                text = title,
-                style = typography.subtitle,
-                color = colors.textPrimary,
-            )
-            AnimatedContent(
-                targetState = status,
-                transitionSpec = {
-                    slideInVertically { -it } + fadeIn() togetherWith
-                            slideOutVertically { it } + fadeOut()
-                },
-            ) {
-                Text(
-                    text = it.text(),
-                    style = typography.bodySmall,
-                    color = colors.textSecondary,
+        AnimatedContent(status) {
+            if (it == Status.Processing) {
+                LoadingIndicator(
+                    color = colors.onPrimary,
+                    modifier = Modifier.size(24.dp),
+                )
+            } else {
+                Icon(
+                    imageVector = when (it) {
+                        Status.Queued -> TMIcons.Waiting
+                        Status.Done -> TMIcons.Checkmark
+                    },
+                    contentDescription = null,
+                    tint = colors.primary,
+                    modifier = Modifier.size(24.dp),
                 )
             }
         }
     }
 }
+
+@Composable
+private fun StatusItemText(item: StatusItem) {
+    val colors = LocalTMColors.current
+    val typography = LocalTMTypography.current
+
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            text = item.title,
+            style = typography.subtitle,
+            color = colors.textPrimary,
+        )
+        AnimatedContent(
+            targetState = item.status,
+            transitionSpec = {
+                slideInVertically { -it } + fadeIn() togetherWith
+                        slideOutVertically { it } + fadeOut()
+            },
+        ) {
+            Text(
+                text = it.text(),
+                style = typography.bodySmall,
+                color = colors.textSecondary,
+            )
+        }
+    }
+}
+
+private data class StatusItem(
+    val title: String,
+    val status: Status,
+)
 
 @Composable
 private fun Status.text(): String {

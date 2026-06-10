@@ -7,8 +7,10 @@ import com.arkivanov.decompose.router.stack.StackNavigation
 import com.arkivanov.decompose.router.stack.childStack
 import com.arkivanov.decompose.router.stack.pop
 import com.arkivanov.decompose.router.stack.pushNew
+import com.arkivanov.decompose.router.stack.replaceCurrent
 import com.arkivanov.decompose.value.Value
 import com.normalnywork.tundramarket.domain.entities.UserRole
+import com.normalnywork.tundramarket.ui.screens.auth.ActualAuthSmsPermissionComponent
 import com.normalnywork.tundramarket.ui.screens.auth.ActualRoleSelectionComponent
 import kotlinx.serialization.Serializable
 import org.koin.core.annotation.Singleton
@@ -70,9 +72,16 @@ class AuthFlowComponent(
                     proceed = {
                         when (config.role) {
                             UserRole.Nomad -> onAuthorizedAsNomad()
-                            UserRole.TradingStation -> onAuthorizedAsTradingStation()
+                            UserRole.TradingStation -> navigation.replaceCurrent(Config.SmsPermission)
                         }
                     },
+                ),
+            )
+
+            Config.SmsPermission -> Child.SmsPermission(
+                component = ActualAuthSmsPermissionComponent(
+                    componentContext = componentContext,
+                    proceed = onAuthorizedAsTradingStation,
                 ),
             )
         }
@@ -104,6 +113,7 @@ class AuthFlowComponent(
         class RoleSelection(val component: RoleSelectionComponent) : Child
         class UserInfo(val component: AuthUserInfoComponent) : Child
         class Initialization(val component: AuthInitializationComponent) : Child
+        class SmsPermission(val component: AuthSmsPermissionComponent) : Child
     }
 
     @Serializable
@@ -120,5 +130,8 @@ class AuthFlowComponent(
             val phoneNumber: String,
             val tradingStationId: Int?,
         ) : Config
+
+        @Serializable
+        data object SmsPermission : Config
     }
 }

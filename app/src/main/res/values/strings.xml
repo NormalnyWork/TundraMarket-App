@@ -28,6 +28,17 @@
     <string name="auth_init_step_stations">Загрузка факторий</string>
     <string name="auth_init_step_catalog">Загрузка товаров</string>
     <string name="auth_init_step_current_order">Проверка заказа</string>
+    <string name="auth_sms_permission_info_title">Нужен доступ к SMS</string>
+    <string name="auth_sms_permission_info_body">Чтобы автоматически принимать заказы, отправленные без подключения к Интернету</string>
+    <string name="auth_sms_permission_how_title">Как это работает</string>
+    <string name="auth_sms_permission_how_step_send_title">Чум отправляет заказ</string>
+    <string name="auth_sms_permission_how_step_send_body">Без Интернета, по SMS</string>
+    <string name="auth_sms_permission_how_step_receive_title">Приложение получает SMS</string>
+    <string name="auth_sms_permission_how_step_receive_body">Обрабатывает закодированный заказ</string>
+    <string name="auth_sms_permission_how_step_system_title">Заказ появляется в системе</string>
+    <string name="auth_sms_permission_how_step_system_body">Автоматически, в читаемом виде</string>
+    <string name="auth_sms_permission_privacy_body">Мы используем SMS только для получения заказов от зарегистрированных чумов. \nЛичные сообщения, коды подтверждения и другая переписка не обрабатываются.</string>
+    <string name="auth_sms_permission_action">Разрешить доступ к SMS</string>
 
     <string name="nomad_main_order_status_title">Текущий заказ</string>
     <string name="nomad_main_order_status_loading">Загрузка состояния заказа...</string>
