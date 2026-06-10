@@ -17,7 +17,7 @@ import io.ktor.serialization.kotlinx.protobuf.protobuf
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.protobuf.ProtoBuf
 import org.koin.core.annotation.Singleton
-import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.seconds
 
 @Singleton
 @OptIn(ExperimentalSerializationApi::class)
@@ -61,7 +61,10 @@ fun provideNetworkClient(
     engine {
         config {
             retryOnConnectionFailure(true)
-            connectTimeout(0, TimeUnit.SECONDS)
+            connectTimeout(0.seconds)
+            callTimeout(30.seconds)
+            readTimeout(30.seconds)
+            writeTimeout(30.seconds)
         }
     }
 }
