@@ -57,6 +57,7 @@ fun OrderStatusHistory.toEntity(orderId: Int) = OrderStatusHistoryEntity(
     orderId = orderId,
     status = status.toEntity(),
     time = time,
+    comment = comment,
 )
 
 private fun OrderProductWithProduct.toDomain() = product.toDomain() to orderProduct.count
@@ -64,6 +65,7 @@ private fun OrderProductWithProduct.toDomain() = product.toDomain() to orderProd
 private fun OrderStatusHistoryEntity.toDomain() = OrderStatusHistory(
     status = status.toDomain(),
     time = time,
+    comment = comment,
 )
 
 private fun OrderStatusEntity.toDomain() = OrderStatus.valueOf(name)

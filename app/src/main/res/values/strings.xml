@@ -29,7 +29,6 @@
     <string name="auth_init_step_catalog">Загрузка товаров</string>
     <string name="auth_init_step_current_order">Проверка заказа</string>
 
-    <string name="nomad_main_title">Главная</string>
     <string name="nomad_main_order_status_title">Текущий заказ</string>
     <string name="nomad_main_order_status_loading">Загрузка состояния заказа...</string>
     <string name="nomad_main_order_status_empty">Активного заказа нет</string>

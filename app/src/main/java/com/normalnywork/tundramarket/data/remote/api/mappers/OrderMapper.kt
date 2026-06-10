@@ -70,6 +70,7 @@ private fun ProtoOrder.toOrderListItem() = RemoteOrdersDataSource.OrderListItem(
 private fun ProtoOrderStatusHistory.toDomain() = OrderStatusHistory(
     status = status.toDomain(),
     time = time.unixSecondsToMilliseconds(),
+    comment = comment,
 )
 
 private fun ProtoOrderStatus.toDomain() = when (this) {

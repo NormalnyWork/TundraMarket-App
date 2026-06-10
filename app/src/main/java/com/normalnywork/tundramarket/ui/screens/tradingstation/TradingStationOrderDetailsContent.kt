@@ -64,6 +64,7 @@ import com.normalnywork.tundramarket.domain.entities.OrderStatus
 import com.normalnywork.tundramarket.domain.entities.OrderStatusHistory
 import com.normalnywork.tundramarket.domain.entities.Product
 import com.normalnywork.tundramarket.domain.entities.TradingStation
+import com.normalnywork.tundramarket.domain.entities.denialComment
 import com.normalnywork.tundramarket.ui.kit.components.TMButtonSecondary
 import com.normalnywork.tundramarket.ui.kit.components.TMButtonSlider
 import com.normalnywork.tundramarket.ui.kit.components.TMTextField
@@ -209,7 +210,7 @@ private fun TradingStationOrderDetailsCards(
                     modifier = Modifier.fillMaxWidth(),
                 )
             }} else null,
-            comment = order.comment.takeIf { order.status == OrderStatus.Sent },
+            comment = order.statusHistory.denialComment,
         )
         AnimatedVisibility(visible = order.status == OrderStatus.Processing) {
             OrderAssemblyCard(
@@ -353,7 +354,7 @@ private fun TradingStationOrderStatusCard(
         ) {
             if (it == OrderStatus.Denied) {
                 Text(
-                    text = comment.toString(),
+                    text = comment ?: stringResource(R.string.nomad_main_status_denied_reason_unavailable),
                     style = LocalTMTypography.current.body,
                     color = LocalTMColors.current.textPrimary,
                     modifier = Modifier

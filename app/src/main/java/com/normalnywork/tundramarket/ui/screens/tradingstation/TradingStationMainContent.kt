@@ -54,6 +54,7 @@ import com.normalnywork.tundramarket.R
 import com.normalnywork.tundramarket.domain.entities.Order
 import com.normalnywork.tundramarket.domain.entities.OrderStatus
 import com.normalnywork.tundramarket.domain.entities.TradingStationOrdersPage
+import com.normalnywork.tundramarket.domain.entities.denialComment
 import com.normalnywork.tundramarket.ui.kit.components.TMButtonPrimary
 import com.normalnywork.tundramarket.ui.kit.components.TMTopBar
 import com.normalnywork.tundramarket.ui.kit.icons.Checkmark
@@ -441,7 +442,7 @@ private fun TradingStationOrderStatusCard(order: Order) {
                 }
             }
         }
-        if (order.status == OrderStatus.Denied && order.comment.isNotBlank()) {
+        if (order.status == OrderStatus.Denied && order.statusHistory.denialComment != null) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -457,7 +458,7 @@ private fun TradingStationOrderStatusCard(order: Order) {
                     .padding(horizontal = 12.dp, vertical = 8.dp),
             ) {
                 Text(
-                    text = order.comment,
+                    text = order.statusHistory.denialComment!!,
                     style = typography.body,
                     color = colors.textPrimary,
                 )

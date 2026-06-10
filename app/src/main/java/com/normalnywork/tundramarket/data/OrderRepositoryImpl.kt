@@ -88,6 +88,7 @@ class OrderRepositoryImpl(
                         orderId = localOrderId,
                         status = OrderStatusEntity.valueOf(history.status.name),
                         time = history.time,
+                        comment = history.comment,
                     )
                 },
             )
@@ -173,6 +174,7 @@ class OrderRepositoryImpl(
                             orderId = localOrderId,
                             status = status,
                             time = now,
+                            comment = comment,
                         ),
                     ),
                 )
@@ -199,6 +201,7 @@ class OrderRepositoryImpl(
                         orderId = localOrderId,
                         status = status,
                         time = now,
+                        comment = comment,
                     ),
                 ),
             )
@@ -370,6 +373,7 @@ class OrderRepositoryImpl(
                     orderId = localOrderId,
                     status = OrderStatusEntity.valueOf(history.status.name),
                     time = history.time,
+                    comment = history.comment,
                 )
             },
         )

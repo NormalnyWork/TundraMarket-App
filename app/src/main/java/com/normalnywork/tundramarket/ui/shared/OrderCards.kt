@@ -735,9 +735,10 @@ private fun ProductRow(
             text = product.name,
             modifier = Modifier.weight(1f),
         )
-        OrderDetailsText(
+        Text(
             text = stringResource(R.string.nomad_create_order_overview_product_quantity, quantity),
-            colorSecondary = true,
+            style = LocalTMTypography.current.bodySmall,
+            color = LocalTMColors.current.textSecondary,
         )
     }
 }

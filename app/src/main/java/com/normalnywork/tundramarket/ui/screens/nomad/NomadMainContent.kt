@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import com.normalnywork.tundramarket.R
 import com.normalnywork.tundramarket.domain.entities.OrderNetworkStatus
 import com.normalnywork.tundramarket.domain.entities.OrderStatus
+import com.normalnywork.tundramarket.domain.entities.denialComment
 import com.normalnywork.tundramarket.domain.entities.isTerminal
 import com.normalnywork.tundramarket.ui.kit.components.TMButtonPrimary
 import com.normalnywork.tundramarket.ui.kit.components.TMButtonSlider
@@ -107,7 +108,7 @@ private fun NomadMainContent(
     Scaffold(
         topBar = {
             Column {
-                TMCompactTopBar(title = stringResource(R.string.nomad_main_title))
+                TMCompactTopBar(title = stringResource(R.string.app_name))
 
                 (currentOrderState as? CurrentOrderState.Order)
                     ?.let {
@@ -436,9 +437,8 @@ private fun OrderStatusCard(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     OrderStatusReasonCard(
-                        text = order.sourceOrder.comment.ifBlank {
-                            stringResource(R.string.nomad_main_status_denied_reason_unavailable)
-                        },
+                        text = order.sourceOrder.statusHistory.denialComment
+                            ?: stringResource(R.string.nomad_main_status_denied_reason_unavailable),
                     )
                     TMButtonSlider(
                         text = stringResource(R.string.nomad_main_repeat_order_action),

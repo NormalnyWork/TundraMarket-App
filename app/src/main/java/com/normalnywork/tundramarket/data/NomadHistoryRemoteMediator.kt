@@ -115,6 +115,7 @@ class NomadHistoryRemoteMediator(
                     orderId = savedOrderId,
                     status = OrderStatusEntity.valueOf(history.status.name),
                     time = history.time,
+                    comment = history.comment,
                 )
             },
         )

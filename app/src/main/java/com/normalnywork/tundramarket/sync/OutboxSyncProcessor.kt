@@ -249,6 +249,7 @@ class OutboxSyncProcessor(
                                     orderId = localOrderId,
                                     status = OrderStatusEntity.valueOf(update.status.name),
                                     time = update.time,
+                                    comment = update.comment,
                                 )
                             },
                         )

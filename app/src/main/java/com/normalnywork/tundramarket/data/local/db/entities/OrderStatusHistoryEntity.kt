@@ -9,6 +9,7 @@ const val DB_ORDER_STATUS_HISTORY_COL_ID = "id"
 const val DB_ORDER_STATUS_HISTORY_COL_ORDER_ID = "order_id"
 const val DB_ORDER_STATUS_HISTORY_COL_STATUS = "status"
 const val DB_ORDER_STATUS_HISTORY_COL_TIME = "time"
+const val DB_ORDER_STATUS_HISTORY_COL_COMMENT = "comment"
 
 @Entity(tableName = DB_ORDER_STATUS_HISTORY_TABLE_NAME)
 data class OrderStatusHistoryEntity(
@@ -21,4 +22,6 @@ data class OrderStatusHistoryEntity(
     val status: OrderStatusEntity,
     @ColumnInfo(name = DB_ORDER_STATUS_HISTORY_COL_TIME)
     val time: Long,
+    @ColumnInfo(name = DB_ORDER_STATUS_HISTORY_COL_COMMENT)
+    val comment: String? = null,
 )

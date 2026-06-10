@@ -20,4 +20,5 @@ enum class ProtoOrderStatus {
 data class ProtoOrderStatusHistory(
     @ProtoNumber(1) val status: ProtoOrderStatus = ProtoOrderStatus.CREATED,
     @ProtoNumber(2) val time: Long,
+    @ProtoNumber(3) val comment: String? = null,
 )
