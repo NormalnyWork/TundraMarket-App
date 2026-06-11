@@ -44,8 +44,8 @@ import com.normalnywork.tundramarket.domain.entities.OrderSmsSendState
 import com.normalnywork.tundramarket.domain.entities.OrderStatus
 import com.normalnywork.tundramarket.domain.entities.TradingStationOrdersPage
 import com.normalnywork.tundramarket.domain.repositories.OrderRepository
-import com.normalnywork.tundramarket.sync.SyncWorkScheduler
 import com.normalnywork.tundramarket.utils.NetworkStatusObserver
+import com.normalnywork.tundramarket.utils.sync.SyncWorkScheduler
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.suspendCancellableCoroutine

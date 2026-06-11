@@ -1,4 +1,4 @@
-package com.normalnywork.tundramarket.sync
+package com.normalnywork.tundramarket.utils.sync
 
 import android.content.Context
 import androidx.work.CoroutineWorker

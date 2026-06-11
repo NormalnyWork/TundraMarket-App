@@ -1,4 +1,4 @@
-package com.normalnywork.tundramarket.sync
+package com.normalnywork.tundramarket.utils.sync
 
 import com.normalnywork.tundramarket.data.local.db.dao.SyncOutboxDao
 import com.normalnywork.tundramarket.data.local.db.entities.SyncOperationTypeEntity

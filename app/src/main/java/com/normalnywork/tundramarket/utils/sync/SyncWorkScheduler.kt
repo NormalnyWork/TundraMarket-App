@@ -1,4 +1,4 @@
-package com.normalnywork.tundramarket.sync
+package com.normalnywork.tundramarket.utils.sync
 
 import android.content.Context
 import androidx.work.Constraints
@@ -60,6 +60,9 @@ class SyncWorkScheduler(context: Context) {
         val request = PeriodicWorkRequestBuilder<WeeklyCatalogUpdateWorker>(
             repeatInterval = CATALOG_UPDATE_INTERVAL_DAYS,
             repeatIntervalTimeUnit = TimeUnit.DAYS,
+        ).setInitialDelay(
+            duration = CATALOG_UPDATE_INTERVAL_DAYS,
+            timeUnit = TimeUnit.DAYS
         ).build()
 
         workManager.enqueueUniquePeriodicWork(

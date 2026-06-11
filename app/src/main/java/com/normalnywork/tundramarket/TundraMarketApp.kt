@@ -1,9 +1,9 @@
 package com.normalnywork.tundramarket
 
 import android.app.Application
-import com.normalnywork.tundramarket.sync.SyncWorkScheduler
 import com.normalnywork.tundramarket.utils.NetworkStatusObserver
 import com.normalnywork.tundramarket.utils.TMKoinApp
+import com.normalnywork.tundramarket.utils.sync.SyncWorkScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

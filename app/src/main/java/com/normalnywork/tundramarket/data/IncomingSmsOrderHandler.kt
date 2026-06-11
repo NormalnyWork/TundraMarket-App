@@ -17,8 +17,8 @@ import com.normalnywork.tundramarket.data.local.preferences.UserSessionStore
 import com.normalnywork.tundramarket.data.remote.sms.TmSmsOrder
 import com.normalnywork.tundramarket.data.remote.sms.TmSmsOrderCodecs
 import com.normalnywork.tundramarket.data.remote.sms.TmSmsOrderDecodeResult
-import com.normalnywork.tundramarket.sync.SyncWorkScheduler
 import com.normalnywork.tundramarket.utils.NetworkStatusObserver
+import com.normalnywork.tundramarket.utils.sync.SyncWorkScheduler
 import org.koin.core.annotation.Singleton
 import java.nio.charset.StandardCharsets
 import java.util.UUID

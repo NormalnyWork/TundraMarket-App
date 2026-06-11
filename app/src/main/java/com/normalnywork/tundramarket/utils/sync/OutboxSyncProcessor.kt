@@ -1,4 +1,4 @@
-package com.normalnywork.tundramarket.sync
+package com.normalnywork.tundramarket.utils.sync
 
 import androidx.room.withTransaction
 import com.normalnywork.tundramarket.data.local.db.TMDatabase

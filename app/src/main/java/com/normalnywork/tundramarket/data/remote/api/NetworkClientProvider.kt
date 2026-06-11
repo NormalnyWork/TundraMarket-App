@@ -1,5 +1,6 @@
 package com.normalnywork.tundramarket.data.remote.api
 
+import com.normalnywork.tundramarket.BuildConfig
 import com.normalnywork.tundramarket.data.remote.api.auth.AuthTokenStore
 import com.normalnywork.tundramarket.utils.TMConst
 import io.ktor.client.HttpClient
@@ -49,7 +50,7 @@ fun provideNetworkClient(
     }
     install(Resources)
 
-    install(Logging) {
+    if (BuildConfig.DEBUG) install(Logging) {
         logger = object : Logger {
             override fun log(message: String) {
                 println(message)
