@@ -862,7 +862,7 @@ private fun CurrentOrderOverviewCard(order: CurrentOrderState.Order) {
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
-            text = stringResource(R.string.nomad_main_order_title, order.id).uppercase(),
+            text = stringResource(R.string.nomad_main_order_title, order.displayId).uppercase(),
             style = typography.label,
             color = colors.textPrimary,
         )

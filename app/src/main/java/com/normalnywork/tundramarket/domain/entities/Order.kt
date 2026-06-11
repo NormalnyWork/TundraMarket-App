@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Order(
     val id: Int,
+    val serverId: Int? = null,
     val nomadId: Int,
     val tradingStation: TradingStation,
     val cart: List<Pair<Product, Int>>,
@@ -15,4 +16,6 @@ data class Order(
     val networkStatus: OrderNetworkStatus? = null,
     val isCreatedViaSms: Boolean = false,
     val assembledProductIds: Set<Int> = emptySet(),
-)
+) {
+    val displayId = serverId ?: id
+}

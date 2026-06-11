@@ -10,7 +10,7 @@ interface OrderRepository {
 
     fun getCurrentOrder(): Flow<Order?>
 
-    fun getOrder(orderId: Int): Flow<Order?>
+    fun getOrder(localOrderId: Int): Flow<Order?>
 
     suspend fun initializeCurrentOrder()
 

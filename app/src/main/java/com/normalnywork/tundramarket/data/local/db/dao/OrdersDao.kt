@@ -71,14 +71,8 @@ interface OrdersDao {
     suspend fun getOrderByLocalId(localOrderId: Int): OrderWithDetails?
 
     @Transaction
-    @Query(
-        """
-        SELECT * FROM $DB_ORDER_TABLE_NAME
-        WHERE $DB_ORDER_COL_ID = :orderId OR $DB_ORDER_COL_SERVER_ID = :orderId
-        LIMIT 1
-        """,
-    )
-    fun getOrderByLocalOrServerIdFlow(orderId: Int): Flow<OrderWithDetails?>
+    @Query("SELECT * FROM $DB_ORDER_TABLE_NAME WHERE $DB_ORDER_COL_ID = :localOrderId")
+    fun getOrderByLocalIdFlow(localOrderId: Int): Flow<OrderWithDetails?>
 
     @Transaction
     @Query("SELECT * FROM $DB_ORDER_TABLE_NAME WHERE $DB_ORDER_COL_SERVER_ID = :serverOrderId")
@@ -94,16 +88,6 @@ interface OrdersDao {
         """,
     )
     suspend fun getOldestServerIdByStatuses(statuses: List<OrderStatusEntity>): Int?
-
-    @Transaction
-    @Query(
-        """
-        SELECT * FROM $DB_ORDER_TABLE_NAME
-        WHERE $DB_ORDER_COL_ID = :orderId OR $DB_ORDER_COL_SERVER_ID = :orderId
-        LIMIT 1
-        """,
-    )
-    suspend fun getOrderByLocalOrServerId(orderId: Int): OrderWithDetails?
 
     @Query(
         """

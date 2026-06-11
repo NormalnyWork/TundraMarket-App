@@ -138,7 +138,7 @@ private fun TradingStationOrderDetailsContent(
     Scaffold(
         topBar = {
             TMTopBar(
-                title = stringResource(R.string.trading_station_order_details_title, order.id),
+                title = stringResource(R.string.trading_station_order_details_title, order.displayId),
                 onBack = onBackClick,
                 showDivider = scrollState.canScrollBackward,
             )

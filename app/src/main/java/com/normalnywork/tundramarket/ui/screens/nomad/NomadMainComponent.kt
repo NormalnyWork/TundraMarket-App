@@ -168,7 +168,7 @@ class NomadMainComponent(
         data object Empty : CurrentOrderState
 
         data class Order(
-            val id: Int,
+            val displayId: Int,
             val sourceOrder: DomainOrder,
             val products: List<ProductItem>,
             val networkState: OrderNetworkStatus?,
@@ -205,7 +205,7 @@ class NomadMainComponent(
     private fun DomainOrder?.toCurrentOrderState(): CurrentOrderState {
         return this?.let { order ->
             CurrentOrderState.Order(
-                id = order.id,
+                displayId = order.displayId,
                 sourceOrder = order,
                 products = order.cart.map { (product, quantity) ->
                     ProductItem(

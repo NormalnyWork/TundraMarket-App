@@ -72,8 +72,8 @@ class OrderRepositoryImpl(
             .map { orderWithDetails -> orderWithDetails?.toDomain() }
     }
 
-    override fun getOrder(orderId: Int): Flow<Order?> {
-        return ordersDao.getOrderByLocalOrServerIdFlow(orderId)
+    override fun getOrder(localOrderId: Int): Flow<Order?> {
+        return ordersDao.getOrderByLocalIdFlow(localOrderId)
             .map { orderWithDetails -> orderWithDetails?.toDomain() }
     }
 
@@ -167,7 +167,7 @@ class OrderRepositoryImpl(
         comment: String,
     ) {
         val phone = order.tradingStation.phone ?: return
-        val localOrder = ordersDao.getOrderByLocalOrServerId(order.id) ?: return
+        val localOrder = ordersDao.getOrderByLocalId(order.id) ?: return
         val localOrderId = localOrder.order.id
         val message = when (val encodeResult = TmSmsOrderCodecs.encode(order.toSmsOrder(comment))) {
             is TmSmsOrderEncodeResult.Success -> encodeResult.message
@@ -253,7 +253,7 @@ class OrderRepositoryImpl(
         order: Order,
         comment: String?,
     ) {
-        val localOrder = ordersDao.getOrderByLocalOrServerId(order.id) ?: return
+        val localOrder = ordersDao.getOrderByLocalId(order.id) ?: return
         val localOrderId = localOrder.order.id
         val status = OrderStatusEntity.valueOf(order.status.name)
         val now = System.currentTimeMillis()
@@ -328,7 +328,7 @@ class OrderRepositoryImpl(
         productId: Int,
         isAssembled: Boolean,
     ) {
-        val localOrder = ordersDao.getOrderByLocalOrServerId(order.id) ?: return
+        val localOrder = ordersDao.getOrderByLocalId(order.id) ?: return
 
         ordersDao.updateOrderProductAssembled(
             localOrderId = localOrder.order.id,

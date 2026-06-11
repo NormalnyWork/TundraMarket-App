@@ -321,7 +321,7 @@ private fun TradingStationOrderCard(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
-                text = stringResource(R.string.trading_station_order_title, order.id).uppercase(),
+                text = stringResource(R.string.trading_station_order_title, order.displayId).uppercase(),
                 style = typography.label,
                 color = colors.textPrimary,
                 maxLines = 1,

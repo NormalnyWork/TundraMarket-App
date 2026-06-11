@@ -67,7 +67,7 @@ private fun NomadOrderDetailsContent(
     Scaffold(
         topBar = {
             TMTopBar(
-                title = stringResource(R.string.nomad_history_order_title, order.id),
+                title = stringResource(R.string.nomad_history_order_title, order.displayId),
                 onBack = onBackClick,
                 showDivider = scrollState.canScrollBackward,
             )

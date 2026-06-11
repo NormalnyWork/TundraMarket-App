@@ -6,5 +6,5 @@ import org.koin.core.annotation.Singleton
 @Singleton
 class GetOrderUseCase(private val repository: OrderRepository) {
 
-    operator fun invoke(orderId: Int) = repository.getOrder(orderId)
+    operator fun invoke(localOrderId: Int) = repository.getOrder(localOrderId)
 }

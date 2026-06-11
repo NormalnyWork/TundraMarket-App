@@ -14,7 +14,8 @@ import com.normalnywork.tundramarket.domain.entities.OrderStatusHistory
 import com.normalnywork.tundramarket.domain.entities.Product
 
 fun OrderWithDetails.toDomain() = Order(
-    id = order.serverId ?: order.id,
+    id = order.id,
+    serverId = order.serverId,
     nomadId = order.nomadId,
     tradingStation = tradingStation.toDomain(),
     cart = cart.map { it.toDomain() },
@@ -35,7 +36,7 @@ fun OrderWithDetails.toDomain() = Order(
 fun Order.toEntity(
     id: Int,
     createdAt: Long,
-    serverId: Int? = null,
+    serverId: Int? = this.serverId,
 ) = OrderEntity(
     id = id,
     serverId = serverId,

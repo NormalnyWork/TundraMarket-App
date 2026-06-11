@@ -118,7 +118,7 @@ fun HistoryOrderCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = stringResource(R.string.nomad_history_order_title, order.id).uppercase(),
+                    text = stringResource(R.string.nomad_history_order_title, order.displayId).uppercase(),
                     style = typography.label,
                     color = colors.textPrimary,
                     maxLines = 1,
