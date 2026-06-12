@@ -28,6 +28,7 @@ class TundraMarketApp : Application() {
         val syncWorkScheduler = koin.get<SyncWorkScheduler>()
 
         syncWorkScheduler.scheduleWeeklyCatalogUpdates()
+        syncWorkScheduler.scheduleCurrentOrderStatusUpdates()
         syncWorkScheduler.schedule(syncCurrentOrderStatus = true)
         applicationScope.launch {
             koin.get<NetworkStatusObserver>()

@@ -72,11 +72,29 @@ class SyncWorkScheduler(context: Context) {
         )
     }
 
+    fun scheduleCurrentOrderStatusUpdates() {
+        val request = PeriodicWorkRequestBuilder<CurrentOrderStatusUpdateWorker>(
+            repeatInterval = CURRENT_ORDER_STATUS_UPDATE_INTERVAL_HOURS,
+            repeatIntervalTimeUnit = TimeUnit.HOURS,
+        ).setInitialDelay(
+            duration = CURRENT_ORDER_STATUS_UPDATE_INTERVAL_HOURS,
+            timeUnit = TimeUnit.HOURS,
+        ).build()
+
+        workManager.enqueueUniquePeriodicWork(
+            CURRENT_ORDER_STATUS_UPDATE_WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            request,
+        )
+    }
+
     companion object {
 
         private const val IMMEDIATE_SYNC_WORK_NAME = "sync-outbox-immediate"
         private const val CONNECTED_SYNC_WORK_NAME = "sync-outbox-connected"
         private const val WEEKLY_CATALOG_UPDATE_WORK_NAME = "weekly-catalog-update"
+        private const val CURRENT_ORDER_STATUS_UPDATE_WORK_NAME = "current-order-status-update"
         private const val CATALOG_UPDATE_INTERVAL_DAYS = 7L
+        private const val CURRENT_ORDER_STATUS_UPDATE_INTERVAL_HOURS = 12L
     }
 }
