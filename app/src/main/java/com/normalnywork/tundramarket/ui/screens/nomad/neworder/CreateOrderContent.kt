@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Scaffold
@@ -106,11 +105,8 @@ fun NomadCreateOrderContent(component: NomadCreateOrderComponent) {
                 scrollAnimation = PagesScrollAnimation.Default,
             ) { _, pageComponent ->
                 NomadCreateOrderPageContent(
-                    component = pageComponent,
-                    canProceedFromLocation = component.canProceedFromLocation(),
-                    latitude = component.latitude,
-                    longitude = component.longitude,
-                    comment = component.comment,
+                    component = component,
+                    pageComponent = pageComponent,
                     catalog = catalog,
                     selectedProductQuantities = selectedProductQuantities,
                     tradingStationItems = tradingStationItems,
@@ -131,11 +127,8 @@ fun NomadCreateOrderContent(component: NomadCreateOrderComponent) {
 
 @Composable
 private fun NomadCreateOrderPageContent(
-    component: NomadCreateOrderComponent.PageComponent,
-    canProceedFromLocation: Boolean,
-    latitude: TextFieldState,
-    longitude: TextFieldState,
-    comment: TextFieldState,
+    component: NomadCreateOrderComponent,
+    pageComponent: NomadCreateOrderComponent.PageComponent,
     catalog: List<Product>,
     selectedProductQuantities: Map<Int, Int>,
     tradingStationItems: List<TradingStationDistance>,
@@ -149,8 +142,8 @@ private fun NomadCreateOrderPageContent(
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         val scrollState = rememberScrollState()
-        val canContinue = when (component.page) {
-            NomadCreateOrderComponent.Page.Location -> canProceedFromLocation
+        val canContinue = when (pageComponent.page) {
+            NomadCreateOrderComponent.Page.Location -> component.canProceedFromLocation()
             NomadCreateOrderComponent.Page.TradingStation ->
                 tradingStationItems.any { item ->
                     item.tradingStation == selectedTradingStation && item.reachable
@@ -169,15 +162,13 @@ private fun NomadCreateOrderPageContent(
             verticalArrangement = Arrangement.spacedBy(32.dp),
         ) {
             InfoCard(
-                title = component.page.infoTitle(),
-                body = component.page.infoBody(),
-                icon = component.page.icon(),
+                title = pageComponent.page.infoTitle(),
+                body = pageComponent.page.infoBody(),
+                icon = pageComponent.page.icon(),
             )
             NomadCreateOrderPageBody(
-                page = component.page,
-                latitude = latitude,
-                longitude = longitude,
-                comment = comment,
+                component = component,
+                page = pageComponent.page,
                 catalog = catalog,
                 selectedProductQuantities = selectedProductQuantities,
                 tradingStationItems = tradingStationItems,
@@ -188,7 +179,7 @@ private fun NomadCreateOrderPageContent(
             )
         }
         NomadCreateOrderPageActions(
-            page = component.page,
+            page = pageComponent.page,
             showDivider = scrollState.canScrollForward,
             enabled = canContinue,
             onNext = onNext,
@@ -200,10 +191,8 @@ private fun NomadCreateOrderPageContent(
 
 @Composable
 private fun NomadCreateOrderPageBody(
+    component: NomadCreateOrderComponent,
     page: NomadCreateOrderComponent.Page,
-    latitude: TextFieldState,
-    longitude: TextFieldState,
-    comment: TextFieldState,
     catalog: List<Product>,
     selectedProductQuantities: Map<Int, Int>,
     tradingStationItems: List<TradingStationDistance>,
@@ -213,10 +202,7 @@ private fun NomadCreateOrderPageBody(
     onProductDecrement: (Product) -> Unit,
 ) {
     when (page) {
-        NomadCreateOrderComponent.Page.Location -> LocationPageContent(
-            latitude = latitude,
-            longitude = longitude,
-        )
+        NomadCreateOrderComponent.Page.Location -> LocationPageContent(component = component)
 
         NomadCreateOrderComponent.Page.TradingStation -> TradingStationPageContent(
             items = tradingStationItems,
@@ -231,12 +217,12 @@ private fun NomadCreateOrderPageBody(
             onDecrement = onProductDecrement,
         )
 
-        NomadCreateOrderComponent.Page.Comment -> CommentPageContent(comment = comment)
+        NomadCreateOrderComponent.Page.Comment -> CommentPageContent(comment = component.comment)
 
         NomadCreateOrderComponent.Page.Overview -> OverviewPageContent(
             location = parseCoordinates(
-                latitude = latitude.text.toString(),
-                longitude = longitude.text.toString(),
+                latitude = component.latitude.text.toString(),
+                longitude = component.longitude.text.toString(),
             ),
             tradingStation = selectedTradingStation,
             tradingStationDistanceKm = tradingStationItems
@@ -244,7 +230,7 @@ private fun NomadCreateOrderPageBody(
                 ?.distanceKm,
             products = catalog,
             selectedQuantities = selectedProductQuantities,
-            comment = comment,
+            comment = component.comment,
         )
     }
 }
@@ -336,19 +322,6 @@ private fun parseCoordinates(
     } else {
         null
     }
-}
-
-@Composable
-private fun NomadCreateOrderComponent.Page.title(): String {
-    return stringResource(
-        when (this) {
-            NomadCreateOrderComponent.Page.Location -> R.string.nomad_create_order_location_page
-            NomadCreateOrderComponent.Page.TradingStation -> R.string.nomad_create_order_trading_station_page
-            NomadCreateOrderComponent.Page.Products -> R.string.nomad_create_order_products_page
-            NomadCreateOrderComponent.Page.Comment -> R.string.nomad_create_order_comment_page
-            NomadCreateOrderComponent.Page.Overview -> R.string.nomad_create_order_overview_page
-        },
-    )
 }
 
 @Composable

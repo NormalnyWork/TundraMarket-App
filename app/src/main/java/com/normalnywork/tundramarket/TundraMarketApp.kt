@@ -25,21 +25,24 @@ class TundraMarketApp : Application() {
         }
 
         val koin = GlobalContext.get()
-        val syncWorkScheduler = koin.get<SyncWorkScheduler>()
+        
+        with(koin.get<SyncWorkScheduler>()) {
+            scheduleWeeklyCatalogUpdates()
+            scheduleCurrentOrderStatusUpdates()
+            schedule(syncCurrentOrderStatus = true)
 
-        syncWorkScheduler.scheduleWeeklyCatalogUpdates()
-        syncWorkScheduler.scheduleCurrentOrderStatusUpdates()
-        syncWorkScheduler.schedule(syncCurrentOrderStatus = true)
-        applicationScope.launch {
-            koin.get<NetworkStatusObserver>()
-                .observe()
-                .filter { isConnected -> isConnected }
-                .collect {
-                    syncWorkScheduler.schedule(
-                        replace = true,
-                        syncCurrentOrderStatus = true,
-                    )
-                }
+            applicationScope.launch {
+                koin.get<NetworkStatusObserver>()
+                    .observe()
+                    .filter { isConnected -> isConnected }
+                    .collect {
+                        schedule(
+                            replace = true,
+                            syncCurrentOrderStatus = true,
+                        )
+                    }
+            }
         }
+
     }
 }

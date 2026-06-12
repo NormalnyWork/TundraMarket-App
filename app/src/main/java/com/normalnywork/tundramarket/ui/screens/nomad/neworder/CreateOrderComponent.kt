@@ -1,6 +1,7 @@
 package com.normalnywork.tundramarket.ui.screens.nomad.neworder
 
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import com.arkivanov.decompose.ComponentContext
 import com.arkivanov.decompose.router.pages.ChildPages
 import com.arkivanov.decompose.router.pages.Pages
@@ -10,6 +11,8 @@ import com.arkivanov.decompose.router.pages.select
 import com.arkivanov.decompose.value.Value
 import com.arkivanov.essenty.backhandler.BackCallback
 import com.arkivanov.essenty.instancekeeper.getOrCreate
+import com.normalnywork.tundramarket.data.local.location.CurrentLocationProvider
+import com.normalnywork.tundramarket.data.local.preferences.LocationPermissionStore
 import com.normalnywork.tundramarket.domain.entities.Location
 import com.normalnywork.tundramarket.domain.entities.Product
 import com.normalnywork.tundramarket.domain.entities.TradingStation
@@ -17,8 +20,10 @@ import com.normalnywork.tundramarket.domain.usecases.config.GetTradingStationsUs
 import com.normalnywork.tundramarket.domain.usecases.orders.CreateOrderUseCase
 import com.normalnywork.tundramarket.domain.usecases.products.GetCatalogUseCase
 import com.normalnywork.tundramarket.ui.tools.BaseStateHolder
+import com.normalnywork.tundramarket.ui.tools.toDisplayCoordinate
 import com.normalnywork.tundramarket.utils.CoordinateDistanceCalculator.distanceTo
 import com.normalnywork.tundramarket.utils.TMConst
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -33,6 +38,8 @@ class NomadCreateOrderComponent(
     getTradingStationsUseCase: GetTradingStationsUseCase,
     getCatalogUseCase: GetCatalogUseCase,
     private val createOrderUseCase: CreateOrderUseCase,
+    private val currentLocationProvider: CurrentLocationProvider,
+    private val locationPermissionStore: LocationPermissionStore,
 ) : ComponentContext by componentContext {
 
     private val stateHolder = instanceKeeper.getOrCreate { StateHolder() }
@@ -54,6 +61,12 @@ class NomadCreateOrderComponent(
     val selectedTradingStation = stateHolder.selectedTradingStation
 
     val selectedProductQuantities = stateHolder.selectedProductQuantities
+
+    val isAutomaticLocationDetectionForbidden: StateFlow<Boolean> = locationPermissionStore
+        .isAutomaticLocationDetectionForbidden()
+        .stateIn(stateHolder.scope, SharingStarted.Lazily, false)
+
+    val locationDetectionState = stateHolder.locationDetectionState
 
     val childPages: Value<ChildPages<Page, PageComponent>> = childPages(
         source = navigation,
@@ -166,6 +179,70 @@ class NomadCreateOrderComponent(
         return currentLocation() != null
     }
 
+    fun onAutomaticLocationPermissionGranted() {
+        stateHolder.locationPermissionDenials = 0
+    }
+
+    fun onAutomaticLocationPermissionRejected(): Boolean {
+        stateHolder.locationPermissionDenials++
+
+        return if (stateHolder.locationPermissionDenials >= MAX_LOCATION_PERMISSION_DENIALS) {
+            onCancelAutomaticLocationDetection()
+            stateHolder.scope.launch {
+                locationPermissionStore.forbidAutomaticLocationDetection()
+            }
+            true
+        } else {
+            false
+        }
+    }
+
+    fun onStartAutomaticLocationDetection() {
+        if (
+            isAutomaticLocationDetectionForbidden.value ||
+            stateHolder.locationDetectionJob?.isActive == true
+        ) return
+
+        stateHolder.locationDetectionState.value = LocationDetectionState.Detecting(
+            location = null,
+            accuracyMeters = null,
+            targetAccuracyMeters = TARGET_LOCATION_ACCURACY_METERS,
+        )
+        stateHolder.locationDetectionJob = stateHolder.scope.launch {
+            try {
+                currentLocationProvider.observeLocation().collect { reading ->
+                    val accuracyMeters = reading.accuracyMeters
+                    if (accuracyMeters != null && accuracyMeters <= TARGET_LOCATION_ACCURACY_METERS) {
+                        applyDetectedLocation(reading.location)
+                        stopAutomaticLocationDetection()
+                    } else {
+                        stateHolder.locationDetectionState.value = LocationDetectionState.Detecting(
+                            location = reading.location,
+                            accuracyMeters = accuracyMeters,
+                            targetAccuracyMeters = TARGET_LOCATION_ACCURACY_METERS,
+                        )
+                    }
+                }
+            } finally {
+                stateHolder.locationDetectionJob = null
+                stateHolder.locationDetectionState.value = LocationDetectionState.Idle
+            }
+        }
+    }
+
+    fun onCancelAutomaticLocationDetection() {
+        stopAutomaticLocationDetection()
+    }
+
+    fun onApplyDetectedLocationClicked() {
+        val state = locationDetectionState.value as? LocationDetectionState.Detecting
+            ?: return
+        val location = state.location ?: return
+
+        applyDetectedLocation(location)
+        stopAutomaticLocationDetection()
+    }
+
     private fun goBack() {
         val pages = childPages.value
         if (pages.selectedIndex > 0) {
@@ -224,6 +301,17 @@ class NomadCreateOrderComponent(
         }
     }
 
+    private fun applyDetectedLocation(location: Location) {
+        latitude.setTextAndPlaceCursorAtEnd(location.latitude.toDisplayCoordinate())
+        longitude.setTextAndPlaceCursorAtEnd(location.longitude.toDisplayCoordinate())
+    }
+
+    private fun stopAutomaticLocationDetection() {
+        stateHolder.locationDetectionJob?.cancel()
+        stateHolder.locationDetectionJob = null
+        stateHolder.locationDetectionState.value = LocationDetectionState.Idle
+    }
+
     private fun child(
         page: Page,
         componentContext: ComponentContext,
@@ -241,6 +329,17 @@ class NomadCreateOrderComponent(
         Overview,
     }
 
+    sealed interface LocationDetectionState {
+
+        data object Idle : LocationDetectionState
+
+        data class Detecting(
+            val location: Location?,
+            val accuracyMeters: Float?,
+            val targetAccuracyMeters: Float,
+        ) : LocationDetectionState
+    }
+
     class PageComponent(
         componentContext: ComponentContext,
         val page: Page,
@@ -254,6 +353,9 @@ class NomadCreateOrderComponent(
         val selectedTradingStation = MutableStateFlow<TradingStation?>(null)
         val selectedProductQuantities = MutableStateFlow<Map<Int, Int>>(emptyMap())
         val isCreatingOrder = MutableStateFlow(false)
+        val locationDetectionState = MutableStateFlow<LocationDetectionState>(LocationDetectionState.Idle)
+        var locationPermissionDenials = 0
+        var locationDetectionJob: Job? = null
     }
 
     private companion object {
@@ -262,6 +364,8 @@ class NomadCreateOrderComponent(
         const val MAX_LATITUDE = 90f
         const val MIN_LONGITUDE = -180f
         const val MAX_LONGITUDE = 180f
+        const val TARGET_LOCATION_ACCURACY_METERS = 1f
+        const val MAX_LOCATION_PERMISSION_DENIALS = 2
     }
 
     @Singleton
@@ -269,6 +373,8 @@ class NomadCreateOrderComponent(
         private val getTradingStationsUseCase: GetTradingStationsUseCase,
         private val getCatalogUseCase: GetCatalogUseCase,
         private val createOrderUseCase: CreateOrderUseCase,
+        private val currentLocationProvider: CurrentLocationProvider,
+        private val locationPermissionStore: LocationPermissionStore,
     ) {
 
         operator fun invoke(
@@ -280,6 +386,8 @@ class NomadCreateOrderComponent(
             getTradingStationsUseCase = getTradingStationsUseCase,
             getCatalogUseCase = getCatalogUseCase,
             createOrderUseCase = createOrderUseCase,
+            currentLocationProvider = currentLocationProvider,
+            locationPermissionStore = locationPermissionStore,
         )
     }
 }

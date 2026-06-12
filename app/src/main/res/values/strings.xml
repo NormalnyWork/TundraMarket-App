@@ -110,17 +110,21 @@
     <string name="nomad_history_open_order_action">Подробнее</string>
 
     <string name="nomad_create_order_title">Новый заказ</string>
-    <string name="nomad_create_order_location_page">Location</string>
-    <string name="nomad_create_order_trading_station_page">TradingStation</string>
-    <string name="nomad_create_order_products_page">Products</string>
-    <string name="nomad_create_order_comment_page">Comment</string>
-    <string name="nomad_create_order_overview_page">Overview</string>
     <string name="nomad_create_order_location_title">Локация</string>
     <string name="nomad_create_order_location_body">Укажите координаты для доставки заказа</string>
     <string name="nomad_create_order_latitude_label">Широта</string>
     <string name="nomad_create_order_latitude_placeholder">67.01234</string>
     <string name="nomad_create_order_longitude_label">Долгота</string>
+    <string name="nomad_create_order_locate_action">Определить</string>
     <string name="nomad_create_order_longitude_placeholder">67.01234</string>
+    <string name="nomad_create_order_location_permission_dialog_title">Геолокация</string>
+    <string name="nomad_create_order_location_permission_dialog_body">Чтобы автоматически заполнить координаты, разрешите точный доступ к геолокации</string>
+    <string name="nomad_create_order_location_permission_dialog_confirm_action">Разрешить</string>
+    <string name="nomad_create_order_location_detection_dialog_title">Определяем координаты</string>
+    <string name="nomad_create_order_location_detection_dialog_body">Держите устройство под открытым небом</string>
+    <string name="nomad_create_order_location_detection_accuracy_unknown">Точность GPS: ищем сигнал</string>
+    <string name="nomad_create_order_location_detection_accuracy_value">Точность GPS: %1$d м</string>
+    <string name="nomad_create_order_location_detection_apply_action">Применить</string>
     <string name="nomad_create_order_trading_station_title">Фактория</string>
     <string name="nomad_create_order_trading_station_body">Выберите факторию, которая обработает заказ</string>
     <string name="nomad_create_order_trading_station_recommended">Рекомендуемый</string>
