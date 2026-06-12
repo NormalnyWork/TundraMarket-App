@@ -249,7 +249,7 @@ private fun LocationDetectionDialog(
                 modifier = Modifier.size(14.dp),
                 trackColor = colors.primaryVariant,
                 color = colors.primary,
-                strokeWidth = 2.dp,
+                strokeWidth = 2.5.dp,
             )
         }
     }
